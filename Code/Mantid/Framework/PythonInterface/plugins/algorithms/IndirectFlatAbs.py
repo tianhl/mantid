@@ -1,122 +1,114 @@
-# Algorithm to start Decon
 from mantid.simpleapi import *
-from mantid.api import PythonAlgorithm, AlgorithmFactory, MatrixWorkspaceProperty, FileProperty, FileAction, PropertyMode
-from mantid.kernel import StringListValidator, StringMandatoryValidator, Direction, logger
-from mantid import config
-import math, os.path, numpy as np
+from mantid.api import PythonAlgorithm, AlgorithmFactory, MatrixWorkspaceProperty, WorkspaceGroupProperty, PropertyMode
+from mantid.kernel import StringMandatoryValidator, Direction, logger
+import math
+import numpy as np
+
 
 class IndirectFlatAbs(PythonAlgorithm):
- 
+
     def category(self):
         return "Workflow\\MIDAS;PythonAlgorithms"
 
+
     def PyInit(self):
-        self.declareProperty(name='Sample Input', defaultValue='Workspace', validator=StringListValidator(['Workspace','File']),
-            doc='Sample input type')
-        self.declareProperty(MatrixWorkspaceProperty('Sample Workspace', '', optional=PropertyMode.Optional, 
-            direction=Direction.Input), doc="Name for the input Sample workspace.")
-        self.declareProperty(FileProperty('Sample File', '', action=FileAction.OptionalLoad, extensions=["_red.nxs"]),
-                             doc='File path for Sample file')
-        self.declareProperty(name='Sample chemical formula', defaultValue='', doc = 'Sample chemical formula')
-        self.declareProperty(name='Sample number density', defaultValue='', doc = 'Sample number density')
-        self.declareProperty(name='Sample thickness', defaultValue='', doc = 'Sample thickness')
-        self.declareProperty(name='Sample angle', defaultValue=0.1, doc = 'Sample angle')
+        self.declareProperty(MatrixWorkspaceProperty('SampleWorkspace', '', direction=Direction.Input),
+                             doc='Sample workspace.')
 
-        self.declareProperty(name='Use Can', defaultValue=False, doc = 'Use Can')
-        self.declareProperty(name='Can Input', defaultValue='Workspace', validator=StringListValidator(['Workspace','File']),
-            doc='Can input type')
-        self.declareProperty(MatrixWorkspaceProperty('Can Workspace', '', optional=PropertyMode.Optional, 
-            direction=Direction.Input), doc="Name for the input Can workspace.")
-        self.declareProperty(FileProperty('Can File', '', action=FileAction.OptionalLoad, extensions=["_red.nxs"]),
-                             doc='File path for Can file')
-        self.declareProperty(name='Can chemical formula', defaultValue='', doc = 'Can chemical formula')
-        self.declareProperty(name='Can number density', defaultValue='', doc = 'Can number density')
-        self.declareProperty(name='Can thickness1', defaultValue='', doc = 'Can thickness1 front')
-        self.declareProperty(name='Can thickness2', defaultValue='', doc = 'Can thickness2 back')
-        self.declareProperty(name='Can scale factor', defaultValue='1.0', doc = 'Scale factor to multiply can data')
+        self.declareProperty(name='SampleChemicalFormula', defaultValue='', validator=StringMandatoryValidator(),
+                             doc='Sample chemical formula')
+        self.declareProperty(name='SampleNumberDensity', defaultValue=0.1, doc='Sample number density')
+        self.declareProperty(name='SampleThickness', defaultValue=0.0, doc='Sample thickness')
+        self.declareProperty(name='SampleAngle', defaultValue=0.1, doc='Sample angle')
 
-        self.declareProperty(name='Verbose', defaultValue=False, doc = 'Switch Verbose Off/On')
-        self.declareProperty(name='Plot', defaultValue=False, doc = 'Plot options')
-        self.declareProperty(name='Save', defaultValue=False, doc = 'Switch Save result to nxs file Off/On')
- 
+        self.declareProperty(MatrixWorkspaceProperty('CanWorkspace', '', optional=PropertyMode.Optional,
+                                                     direction=Direction.Input),
+                             doc='Container workspace.')
+
+        self.declareProperty(name='CanChemicalFormula', defaultValue='', doc='Can chemical formula')
+        self.declareProperty(name='CanNumberDensity', defaultValue=0.1, doc='Can number density')
+        self.declareProperty(name='CanFrontThickness', defaultValue=0.0, doc='Can front thickness')
+        self.declareProperty(name='CanBackThickness', defaultValue=0.0, doc='Can back thickness')
+        self.declareProperty(name='CanScaleFactor', defaultValue=1.0, doc='Scale factor to multiply can data')
+
+        self.declareProperty(name='Plot', defaultValue=False, doc='Plot options')
+
+        self.declareProperty(WorkspaceGroupProperty('OutputWorkspace', '', direction=Direction.Output),
+                             doc='Calculated correction functions.')
+
+
     def PyExec(self):
-
-        from IndirectCommon import StartTime, EndTime, getEfixed, addSampleLogs
+        from IndirectCommon import getEfixed, addSampleLogs
         from IndirectAbsCor import FlatAbs
-        from IndirectImport import import_mantidplot
-        mp = import_mantidplot()
 
-        StartTime('FlatPlate Absorption')
-        workdir = config['defaultsave.directory']
         self._setup()
-        self._waveRange()
-        swaveWS = '__sam_wave'
+
+        self._wave_range()
+
+        sample_wave_ws = '__sam_wave'
         if self._diffraction:
-            ConvertUnits(InputWorkspace=self._sam, OutputWorkspace=swaveWS, Target='Wavelength')
+            ConvertUnits(InputWorkspace=self._sample_ws, OutputWorkspace=sample_wave_ws, Target='Wavelength')
         else:
-            ConvertUnits(InputWorkspace=self._sam, OutputWorkspace=swaveWS, Target='Wavelength',
-            EMode='Indirect', EFixed=self._efixed)
+            ConvertUnits(InputWorkspace=self._sample_ws, OutputWorkspace=sample_wave_ws, Target='Wavelength',
+                         EMode='Indirect', EFixed=self._efixed)
 
-        name = self._sam[:-4] + '_flt'
-        assWS = name + '_ass'
-        SetSampleMaterial(swaveWS, ChemicalFormula=self._sam_chem, SampleNumberDensity=self._sam_density)
-        sample = mtd[swaveWS].sample()
+        SetSampleMaterial(sample_wave_ws, ChemicalFormula=self._sample_chemical_formula, SampleNumberDensity=self._sample_number_density)
+        sample = mtd[sample_wave_ws].sample()
         sam_mat = sample.getMaterial()
-        # total scattering x-section
+        # Total scattering x-section
         sigs = [sam_mat.totalScatterXSection()]
-        # absorption x-section
+        # Absorption x-section
         siga = [sam_mat.absorbXSection()]
-        size = [self._sam_thickness]
-        density = [self._sam_density]
+        size = [self._sample_thickness]
+        density = [self._sample_number_density]
         ncan = 0
-        ndet = len(self._det)
+        ndet = len(self._detector_angles)
 
-        if self._usecan:
-            cwaveWS = '__can_wave'
+        if self._can_ws is not None:
+            can_wave_ws = '__can_wave'
             if self._diffraction:
-                ConvertUnits(InputWorkspace=self._can, OutputWorkspace=cwaveWS, Target='Wavelength')
+                ConvertUnits(InputWorkspace=self._can_ws, OutputWorkspace=can_wave_ws, Target='Wavelength')
             else:
-                ConvertUnits(InputWorkspace=self._can, OutputWorkspace=cwaveWS, Target='Wavelength',
-                    EMode='Indirect', EFixed=self._efixed)
-            SetSampleMaterial(InputWorkspace=cwaveWS, ChemicalFormula=self._can_chem, SampleNumberDensity=self._can_density)
-            can_sample = mtd[cwaveWS].sample()
+                ConvertUnits(InputWorkspace=self._can_ws, OutputWorkspace=can_wave_ws, Target='Wavelength',
+                             EMode='Indirect', EFixed=self._efixed)
+
+            SetSampleMaterial(InputWorkspace=can_wave_ws, ChemicalFormula=self._can_chemical_formula, SampleNumberDensity=self._can_density)
+            can_sample = mtd[can_wave_ws].sample()
             can_mat = can_sample.getMaterial()
 
-        # total scattering x-section for can
+            # Total scattering x-section for can
             sigs.append(can_mat.totalScatterXSection())
             sigs.append(can_mat.totalScatterXSection())
-        # absorption x-section for can
+            # Absorption x-section for can
             siga.append(can_mat.absorbXSection())
             siga.append(can_mat.absorbXSection())
-            size.append(self._can_thickness1)
-            size.append(self._can_thickness2)
+            size.append(self._can_front_thickness)
+            size.append(self._can_back_thickness)
             density.append(self._can_density)
             density.append(self._can_density)
             ncan = 2
 
-        dataA1 = []
-        dataA2 = []
-        dataA3 = []
-        dataA4 = []
+        data_a1 = []
+        data_a2 = []
+        data_a3 = []
+        data_a4 = []
 
-    #initially set errors to zero
-        eZero = np.zeros(len(self._waves))
+        for det in range(ndet):
+            det_angle = self._detector_angles[det]
+            angles = [self._sample_angle, det_angle]
+            (a1, a2, a3, a4) = FlatAbs(ncan, size, density, sigs, siga, angles, self._wavelengths)
+            logger.information('Processed detector %d at angle %f' % (det, det_angle))
 
-        for n in range(ndet):
-            angles = [self._sam_angle, self._det[n]]
-            (A1, A2, A3, A4) = FlatAbs(ncan, size, density, sigs, siga, angles, self._waves)
+            data_a1 = np.append(data_a1, a1)
+            data_a2 = np.append(data_a2, a2)
+            data_a3 = np.append(data_a3, a3)
+            data_a4 = np.append(data_a4, a4)
 
-            if self._verbose:
-                logger.notice('Detector ' + str(n) + ' at angle : ' + str(self._det[n]) + ' * successful')
-
-            dataA1 = np.append(dataA1, A1)
-            dataA2 = np.append(dataA2, A2)
-            dataA3 = np.append(dataA3, A3)
-            dataA4 = np.append(dataA4, A4)
-
-        sample_logs = {'sample_shape': 'flatplate', 'sample_filename': self._sam,
-                        'sample_thickness': self._sam_thickness, 'sample_angle': self._sam_angle}
-        dataX = self._waves * ndet
+        sample_logs = {'sample_shape': 'flatplate',
+                       'sample_filename': self._sample_ws,
+                       'sample_thickness': self._sample_thickness,
+                       'sample_angle': self._sample_angle}
+        data_x = self._wavelengths * ndet
 
         if self._diffraction:
             v_axis_unit = 'dSpacing'
@@ -125,176 +117,121 @@ class IndirectFlatAbs(PythonAlgorithm):
             v_axis_unit = 'MomentumTransfer'
             v_axis_values = self._q
 
-    # Create the output workspaces
-        assWS = name + '_ass'
-        asscWS = name + '_assc'
-        acscWS = name + '_acsc'
-        accWS = name + '_acc'
-        fname = name + '_abs'
+        CreateWorkspace(OutputWorkspace=self._output_name('ass'), DataX=data_x, DataY=data_a1,
+                        NSpec=ndet, UnitX='Wavelength',
+                        VerticalAxisUnit=v_axis_unit, VerticalAxisValues=v_axis_values)
+        addSampleLogs(self._output_name('ass'), sample_logs)
 
-        CreateWorkspace(OutputWorkspace=assWS, DataX=dataX, DataY=dataA1,
-                    NSpec=ndet, UnitX='Wavelength',
-                    VerticalAxisUnit=v_axis_unit, VerticalAxisValues=v_axis_values)
-        addSampleLogs(assWS, sample_logs)
+        CreateWorkspace(OutputWorkspace=self._output_name('assc'), DataX=data_x, DataY=data_a2,
+                        NSpec=ndet, UnitX='Wavelength',
+                        VerticalAxisUnit=v_axis_unit, VerticalAxisValues=v_axis_values)
+        addSampleLogs(self._output_name('assc'), sample_logs)
 
-        CreateWorkspace(OutputWorkspace=asscWS, DataX=dataX, DataY=dataA2,
-                    NSpec=ndet, UnitX='Wavelength',
-                    VerticalAxisUnit=v_axis_unit, VerticalAxisValues=v_axis_values)
-        addSampleLogs(asscWS, sample_logs)
+        CreateWorkspace(OutputWorkspace=self._output_name('ascs'), DataX=data_x, DataY=data_a3,
+                        NSpec=ndet, UnitX='Wavelength',
+                        VerticalAxisUnit=v_axis_unit, VerticalAxisValues=v_axis_values)
+        addSampleLogs(self._output_name('ascs'), sample_logs)
 
-        CreateWorkspace(OutputWorkspace=acscWS, DataX=dataX, DataY=dataA3,
-                    NSpec=ndet, UnitX='Wavelength',
-                    VerticalAxisUnit=v_axis_unit, VerticalAxisValues=v_axis_values)
-        addSampleLogs(acscWS, sample_logs)
+        CreateWorkspace(OutputWorkspace=self._output_name('acc'), DataX=data_x, DataY=data_a4,
+                        NSpec=ndet, UnitX='Wavelength',
+                        VerticalAxisUnit=v_axis_unit, VerticalAxisValues=v_axis_values)
+        addSampleLogs(self._output_name('acc'), sample_logs)
 
-        CreateWorkspace(OutputWorkspace=accWS, DataX=dataX, DataY=dataA4,
-                    NSpec=ndet, UnitX='Wavelength',
-                    VerticalAxisUnit=v_axis_unit, VerticalAxisValues=v_axis_values)
-        addSampleLogs(accWS, sample_logs)
-
-        if self._usecan:
-            workspaces = [assWS, asscWS, acscWS, accWS]
-            AddSampleLog(Workspace=assWS, LogName='can_filename', LogType='String', LogText=str(self._can))
-    	    AddSampleLog(Workspace=asscWS, LogName='can_filename', LogType='String', LogText=str(self._can))
-    	    AddSampleLog(Workspace=acscWS, LogName='can_filename', LogType='String', LogText=str(self._can))
-    	    AddSampleLog(Workspace=accWS, LogName='can_filename', LogType='String', LogText=str(self._can))
+        if self._can_ws is not None:
+            workspaces = [self._output_name(ws_type) for ws_type in ['ass', 'assc', 'ascs', 'acc']]
+            AddSampleLog(Workspace=self._output_name('ass'), LogName='can_filename', LogType='String', LogText=str(self._can_ws))
+            AddSampleLog(Workspace=self._output_name('assc'), LogName='can_filename', LogType='String', LogText=str(self._can_ws))
+            AddSampleLog(Workspace=self._output_name('ascs'), LogName='can_filename', LogType='String', LogText=str(self._can_ws))
+            AddSampleLog(Workspace=self._output_name('acc'), LogName='can_filename', LogType='String', LogText=str(self._can_ws))
         else:
-            workspaces = [assWS]
+            workspaces = [self._output_name('ass')]
 
-        group = assWS + ',' + asscWS + ',' + acscWS + ',' + accWS
-        GroupWorkspaces(InputWorkspaces=group, OutputWorkspace=fname)
+        GroupWorkspaces(InputWorkspaces=workspaces, OutputWorkspace=self._output_ws)
+        self.setProperty('OutputWorkspace', self._output_ws)
 
         if self._plot:
-            graph1 = mp.plotSpectrum(workspaces, 0)
-            graph2 = mp.plotTimeBin(workspaces, 0)
-            graph2.activeLayer().setAxisTitle(mp.Layer.Bottom, 'Angle')
+            from IndirectImport import import_mantidplot
+            mantid_plot = import_mantidplot()
+            mantid_plot.plotSpectrum(workspaces, 0)
+            time_bin = mantid_plot.plotTimeBin(workspaces, 0)
+            time_bin.activeLayer().setAxisTitle(mantid_plot.Layer.Bottom, 'Angle')
 
-        if self._save:
-            path = os.path.join(workdir,assWS + '.nxs')
-            SaveNexusProcessed(InputWorkspace=assWS, Filename=path)
-            if self._verbose:
-                logger.notice('Output file created : '+path)
-
-        EndTime('FlatPlate Absorption')
 
     def _setup(self):
-        self._verbose = self.getProperty('Verbose').value
-        sInput = self.getPropertyValue('Sample Input')
-        if sInput == 'Workspace':
-            s_ws = self.getPropertyValue('Sample Workspace')
-        else:
-            s_ws = ''
-        if sInput == 'File':
-            s_file = self.getPropertyValue('Sample File')
-        else:
-            s_file = ''
-        self._input = sInput
-        self._path = s_file
-        self._ws = s_ws
-        self._getData()
-        self._sam = self._name
-        self._sam_chem = self.getPropertyValue('Sample chemical formula')
-        self._sam_density = float(self.getPropertyValue('Sample number density'))
-        self._sam_thickness = float(self.getPropertyValue('Sample thickness'))
-        self._sam_angle = float(self.getPropertyValue('Sample angle'))
+        """
+        Get algorithm properties.
+        """
 
-        self._usecan = self.getProperty('Use can').value
-        if self._usecan:
-            cInput = self.getPropertyValue('Can Input')
-            if cInput == 'Workspace':
-                c_ws = self.getPropertyValue('Can Workspace')
-            else:
-                c_ws = ''
-            if cInput == 'File':
-                c_file = self.getPropertyValue('Can File')
-            else:
-                c_file = ''
-            self._input = cInput
-            self._path = c_file
-            self._ws = c_ws
-            self._getData()
-            self._can = self._name
-            self._can_chem = self.getPropertyValue('Can chemical formula')
-            self._can_density = float(self.getPropertyValue('Can number density'))
-            self._can_thickness1 = float(self.getPropertyValue('Can thickness1'))
-            self._can_thickness2 = float(self.getPropertyValue('Can thickness2'))
-            self._can_scale = self.getPropertyValue('Can scale factor')
+        self._sample_ws = self.getPropertyValue('SampleWorkspace')
+        self._sample_chemical_formula = self.getPropertyValue('SampleChemicalFormula')
+        self._sample_number_density = self.getProperty('SampleNumberDensity').value
+        self._sample_thickness = self.getProperty('SampleThickness').value
+        self._sample_angle = self.getProperty('SampleAngle').value
+
+        self._can_ws = self.getPropertyValue('CanWorkspace')
+        if self._can_ws == '':
+            self._can_ws = None
+
+        self._can_chemical_formula = self.getPropertyValue('CanChemicalFormula')
+        self._can_density = self.getProperty('CanNumberDensity').value
+        self._can_front_thickness = self.getProperty('CanFrontThickness').value
+        self._can_back_thickness = self.getProperty('CanBackThickness').value
+        self._can_scale = self.getProperty('CanScaleFactor').value
 
         self._plot = self.getProperty('Plot').value
-        self._save = self.getProperty('Save').value
-		
-    def _getData(self):   #get data
-        if self._input == 'Workspace':
-            inWS = self._ws
-            self._name = inWS
-            if self._verbose:
-                logger.notice('Input from Workspace : '+inWS)
-        elif self._input == 'File':
-            self._getFileName()
-            inWS = self._name
-            LoadNexus(Filename=self._path, OutputWorkspace=inWS)
-        else:
-            raise ValueError('Input type not defined')
+        self._output_ws = self.getPropertyValue('OutputWorkspace')
 
-    def _getFileName(self):
-        import os.path
-        path = self._path
-        if(os.path.isfile(path)): 
-            base = os.path.basename(path)
-            self._name = os.path.splitext(base)[0]
-            ext = os.path.splitext(base)[1]
-            if self._verbose:
-                logger.notice('Input file : '+path)
-        else:
-            raise ValueError('Could not find file: ' + path)
+        self._output_name = lambda ws_type: self._output_ws + '_' + ws_type
 
-    def _waveRange(self):
+
+    def _wave_range(self):
+        """
+        Create a list of 10 equi-spaced wavelengths spanning the input data.
+        """
+
         from IndirectCommon import checkUnitIs, GetWSangles, getEfixed, GetThetaQ
-# create a list of 10 equi-spaced wavelengths spanning the input data
-        oWS = '__WaveRange'
-        ExtractSingleSpectrum(InputWorkspace=self._sam, OutputWorkspace=oWS, WorkspaceIndex=0)
-        self._diffraction = checkUnitIs(self._sam, 'dSpacing')
+
+        sample_spec_ws = '__WaveRange'
+        ExtractSingleSpectrum(InputWorkspace=self._sample_ws, OutputWorkspace=sample_spec_ws, WorkspaceIndex=0)
+        self._diffraction = checkUnitIs(self._sample_ws, 'dSpacing')
 
         if self._diffraction:
-            self._det = GetWSangles(self._sam)
+            self._detector_angles = GetWSangles(self._sample_ws)
             self._efixed = 0.0
-            ConvertUnits(InputWorkspace=oWS, OutputWorkspace=oWS, Target='Wavelength',
-                     EMode='Elastic')
+            ConvertUnits(InputWorkspace=sample_spec_ws, OutputWorkspace=sample_spec_ws, Target='Wavelength',
+                         EMode='Elastic')
         else:
-            self._det, self._q = GetThetaQ(self._sam)
-            self._efixed = getEfixed(self._sam)
-            ConvertUnits(InputWorkspace=oWS, OutputWorkspace=oWS, Target='Wavelength',
-                     EMode='Indirect', EFixed=self._efixed)
-        Xin = mtd[oWS].readX(0)
-        xmin = mtd[oWS].readX(0)[0]
-        xmax = mtd[oWS].readX(0)[len(Xin) - 1]
+            self._detector_angles, self._q = GetThetaQ(self._sample_ws)
+            self._efixed = getEfixed(self._sample_ws)
+            ConvertUnits(InputWorkspace=sample_spec_ws, OutputWorkspace=sample_spec_ws, Target='Wavelength',
+                         EMode='Indirect', EFixed=self._efixed)
+
+        data_x_in = mtd[sample_spec_ws].readX(0)
+        x_min = mtd[sample_spec_ws].readX(0)[0]
+        x_max = mtd[sample_spec_ws].readX(0)[len(data_x_in) - 1]
         ebin = 0.5
-        nw1 = int(xmin/ebin)
-        nw2 = int(xmax/ebin)+1
-        w1 = nw1*ebin
-        w2 = nw2*ebin
+        nw1 = int(x_min / ebin)
+        nw2 = int(x_max / ebin) + 1
+        w1 = nw1 * ebin
+        w2 = nw2 * ebin
         waves = []
-        nw = 10
-        ebin = (w2-w1)/(nw-1)
-        for l in range(0,nw):
-            waves.append(w1+l*ebin)
-        DeleteWorkspace(oWS)
-        self._waves = waves
+        number_wavelengths = 10
+        ebin = (w2 - w1) / (number_wavelengths - 1)
+        for l in range(0, number_wavelengths):
+            waves.append(w1 + l * ebin)
+        DeleteWorkspace(sample_spec_ws)
+        self._wavelengths = waves
 
         if self._diffraction:
-            self._wavelas = waves[int(nw / 2)]
+            self._wavelas = waves[int(number_wavelengths / 2)]
         else:
-            self._wavelas = math.sqrt(81.787/self._efixed) # elastic wavelength
+            self._wavelas = math.sqrt(81.787 / self._efixed)  # Elastic wavelength
 
-        if self._verbose:
-            logger.notice('Elastic lambda : ' + str(self._wavelas))
-            nw = len(self._waves)
-            message = 'Lambda : ' + str(nw) + ' values from ' + str(self._waves[0]) + ' to ' + str(self._waves[nw - 1])
-            logger.notice(message)
-            ndet = len(self._det)
-            message = 'Detector angles : ' + str(ndet) + ' from ' + str(self._det[0]) + ' to ' + str(self._det[ndet - 1])
-            logger.notice(message)
+        logger.information('Elastic lambda: ' + str(self._wavelas))
+        logger.information('Lambda: %d. From %d to %d' % (len(self._wavelengths), self._wavelengths[0], self._wavelengths[-1]))
+        logger.information('Detector angles: %d. From %d to %d' %
+                           (len(self._detector_angles), self._detector_angles[0], self._detector_angles[-1]))
+
 
 # Register algorithm with Mantid
 AlgorithmFactory.subscribe(IndirectFlatAbs)
-#
