@@ -933,8 +933,11 @@ private:
 /** Empty default constructor
 */
 LoadEventNexus::LoadEventNexus()
-    : IFileLoader<Kernel::NexusDescriptor>(), discarded_events(0),
-      event_id_is_spec(false) {}
+    : IFileLoader<Kernel::NexusDescriptor>(),
+    instrument_loaded_correctly(false),
+    discarded_events(0),
+    logs_loaded_correctly(false),
+    event_id_is_spec(false) {}
 
 //----------------------------------------------------------------------------------------------
 /** Destructor */
@@ -1338,6 +1341,8 @@ std::size_t numEvents(::NeXus::File &file, bool &hasTotalCounts,
 * @param prog :: A pointer to the progress reporting object
 * @param monitors :: If true the events from the monitors are loaded and not the
 * main banks
+*
+* This also loads the instrument, but only if it has not been loaded before.
 */
 void LoadEventNexus::loadEvents(API::Progress *const prog,
                                 const bool monitors) {
@@ -1351,39 +1356,45 @@ void LoadEventNexus::loadEvents(API::Progress *const prog,
   // Initialize the counter of bad TOFs
   bad_tofs = 0;
 
-  if (loadlogs) {
-    prog->doReport("Loading DAS logs");
-    m_allBanksPulseTimes = runLoadNexusLogs(m_filename, WS, *this, true);
-    run_start = WS->getFirstPulseTime();
-  } else {
-    g_log.information() << "Skipping the loading of sample logs!\n"
-                        << "Reading the start time directly from /"
-                        << m_top_entry_name << "/start_time\n";
-    // start_time is read and set
-    ::NeXus::File nxfile(m_filename);
-    nxfile.openGroup(m_top_entry_name, "NXentry");
-    std::string tmp;
-    nxfile.readData("start_time", tmp);
-    run_start = DateAndTime(tmp);
-    WS->mutableRun().addProperty("run_start", run_start.toISO8601String(),
-                                 true);
+  if (!logs_loaded_correctly) {
+    if (loadlogs) {
+      prog->doReport("Loading DAS logs");
+      m_allBanksPulseTimes = runLoadNexusLogs(m_filename, WS, *this, true);
+      run_start = WS->getFirstPulseTime();
+    } else {
+      g_log.information() << "Skipping the loading of sample logs!\n"
+                          << "Reading the start time directly from /"
+                          << m_top_entry_name << "/start_time\n";
+      // start_time is read and set
+      ::NeXus::File nxfile(m_filename);
+      nxfile.openGroup(m_top_entry_name, "NXentry");
+      std::string tmp;
+      nxfile.readData("start_time", tmp);
+      run_start = DateAndTime(tmp);
+      WS->mutableRun().addProperty("run_start", run_start.toISO8601String(),
+                                   true);
+    }
+
+    // Make sure you have a non-NULL m_allBanksPulseTimes
+    if (m_allBanksPulseTimes == NULL) {
+      std::vector<DateAndTime> temp;
+      // m_allBanksPulseTimes = new BankPulseTimes(temp);
+      m_allBanksPulseTimes = boost::make_shared<BankPulseTimes>(temp);
+    }
+
+    logs_loaded_correctly = true;
   }
 
-  // Make sure you have a non-NULL m_allBanksPulseTimes
-  if (m_allBanksPulseTimes == NULL) {
-    std::vector<DateAndTime> temp;
-    // m_allBanksPulseTimes = new BankPulseTimes(temp);
-    m_allBanksPulseTimes = boost::make_shared<BankPulseTimes>(temp);
-  }
-
-  // Load the instrument
-  prog->report("Loading instrument");
-  instrument_loaded_correctly =
+  if (!instrument_loaded_correctly) {
+    // Load the instrument (if not loaded before)
+    prog->report("Loading instrument");
+    instrument_loaded_correctly =
       loadInstrument(m_filename, WS, m_top_entry_name, this);
 
-  if (!this->instrument_loaded_correctly)
-    throw std::runtime_error(
+    if (!instrument_loaded_correctly)
+      throw std::runtime_error(
         "Instrument was not initialized correctly! Loading cannot continue.");
+  }
 
   // top level file information
   ::NeXus::File file(m_filename);
@@ -2244,7 +2255,7 @@ bool LoadEventNexus::hasEventMonitors() {
 * workspace. The name of the new event workspace is contructed by
 * appending '_monitors' to the base workspace name.
 *
-* This is used when the property "MnitorsAsEvents" is enabled, and
+* This is used when the property "MonitorsAsEvents" is enabled, and
 * there are monitors with events.
 *
 * @param prog :: progress reporter
