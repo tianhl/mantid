@@ -390,6 +390,7 @@ void ApplicationWindow::init(bool factorySettings, const QStringList& args)
 
   actionSaveFile=NULL;
   actionSaveProject=NULL;
+  actionSaveProjectAs=NULL;
   folders = new FolderListView(this);
   folders->header()->setClickEnabled( false );
   folders->addColumn( tr("Folder") );
@@ -6078,12 +6079,11 @@ void ApplicationWindow::savetoNexusFile()
 {
   QString filter = tr("Mantid Files")+" (*.nxs *.nx5 *.xml);;";
   QString selectedFilter;
-  QString fileDir=MantidQt::API::AlgorithmInputHistory::Instance().getPreviousDirectory();
-  if(fileDir.isEmpty())
-  {fileDir="C\\Mantid\\Test\\Nexus";
-  }
-  QString fileName = MantidQt::API::FileDialogHandler::getSaveFileName(this, tr("Save File As"), fileDir, filter, &selectedFilter);
-  if ( !fileName.isEmpty() ){
+  QString fileDir = MantidQt::API::AlgorithmInputHistory::Instance().getPreviousDirectory();
+  QString fileName =
+    MantidQt::API::FileDialogHandler::getSaveFileName(this, tr("Save File As"), fileDir, filter, &selectedFilter);
+  if ( !fileName.isEmpty() )
+  {
     std::string wsName;
     MdiSubWindow *w = activeWindow();
     if(w)
@@ -6091,10 +6091,15 @@ void ApplicationWindow::savetoNexusFile()
       if(w->isA("MantidMatrix"))
       {
         wsName=dynamic_cast<MantidMatrix*>(w)->getWorkspaceName();
+
       }
-      if(w->isA("MantidTable"))
+      else if(w->isA("MantidTable"))
       {
         wsName=dynamic_cast<MantidTable*>(w)->getWorkspaceName();
+      }
+      else
+      {
+        throw std::runtime_error("Invalid input for SaveNexus, you cannot save this type of object as a NeXus file");
       }
     }
     else
@@ -6107,7 +6112,6 @@ void ApplicationWindow::savetoNexusFile()
     }
 
     savedatainNexusFormat(wsName,fileName.toStdString());
-
     MantidQt::API::AlgorithmInputHistory::Instance().setPreviousDirectory(QFileInfo(fileName).absoluteDir().path());
     updateRecentFilesList(fileName);
   }
@@ -9148,7 +9152,7 @@ void ApplicationWindow::fileMenuAboutToShow()
 
   fileMenu->insertSeparator();
   fileMenu->addAction(actionSaveProjectAs);
-  //fileMenu->insertSeparator();
+
   saveMenu=fileMenu->addMenu(tr("&Save"));
   saveMenu->addAction(actionSaveFile);
   saveMenu->addAction(actionSaveProject);
@@ -9455,13 +9459,18 @@ void ApplicationWindow::newProject()
   resultsLog->clear();
   setWindowTitle(tr("MantidPlot - untitled"));//Mantid
   projectname = "untitled";
+
+  if(actionSaveProject)
+    actionSaveProject->setEnabled(false);
 }
 
 void ApplicationWindow::savedProject()
 {
   QCoreApplication::processEvents();
-  if(actionSaveFile) actionSaveFile->setEnabled(false);
-  if(actionSaveProject)actionSaveProject->setEnabled(false);
+  if(actionSaveFile)
+    actionSaveFile->setEnabled(false);
+  if(actionSaveProject)
+    actionSaveProject->setEnabled(false);
   saved = true;
 
   Folder *f = projectFolder();
@@ -9481,8 +9490,12 @@ void ApplicationWindow::modifiedProject()
 {
   if (saved == false)
     return;
-  if(actionSaveFile) actionSaveFile->setEnabled(true);
-  if(actionSaveProject)actionSaveProject->setEnabled(true);
+  // enable actionSaveProject, but not actionSaveFile (which is Save Nexus and doesn't
+  // seem to make sense for qti objects (graphs, tables, matrices, notes, etc.)
+  if(actionSaveProject)
+    actionSaveProject->setEnabled(true);
+  if(actionSaveProjectAs)
+    actionSaveProjectAs->setEnabled(true);
   saved = false;
 }
 
@@ -11810,8 +11823,9 @@ void ApplicationWindow::createActions()
   actionImportImage = new QAction(tr("Import I&mage..."), this);
   connect(actionImportImage, SIGNAL(activated()), this, SLOT(importImage()));
 
-  actionSaveProjectAs = new QAction(tr("Save Project &As..."), this);
+  actionSaveProjectAs = new QAction(QIcon(":/SaveProject16x16.png"), tr("Save Project &As..."), this);
   connect(actionSaveProjectAs, SIGNAL(activated()), this, SLOT(saveProjectAs()));
+  actionSaveProjectAs->setEnabled(false);
 
   actionSaveNote = new QAction(tr("Save Note As..."), this);
   connect(actionSaveNote, SIGNAL(activated()), this, SLOT(saveNoteAs()));
@@ -12631,15 +12645,15 @@ void ApplicationWindow::translateActionsStrings()
   actionImportImage->setMenuText(tr("Import I&mage..."));
 
   actionSaveFile->setMenuText(tr("&Nexus"));
-  actionSaveFile->setToolTip(tr("Save nexus file"));
+  actionSaveFile->setToolTip(tr("Save as NeXus file"));
   actionSaveFile->setShortcut(tr("Ctrl+S"));
 
   actionSaveProject->setMenuText(tr("&Project"));
   actionSaveProject->setToolTip(tr("Save Mantid Project"));
   actionSaveProject->setShortcut(tr("Ctrl+Shift+S"));
 
-
   actionSaveProjectAs->setMenuText(tr("Save Project &As..."));
+  actionSaveProjectAs->setToolTip(tr("Save Mantid Project using a different name or path"));
 
   actionLoad->setMenuText(tr("&Import ASCII..."));
   actionLoad->setToolTip(tr("Import data file(s)"));
@@ -16295,8 +16309,6 @@ void ApplicationWindow::customMultilayerToolButtons(MultiLayer* w)
  */
 void ApplicationWindow::savedatainNexusFormat(const std::string& wsName,const std::string& fileName)
 {
-  //std::string s=workingDir.toStdString()+wsName+".nxs";
-  // std::string fileName(s);
   if(fileName.empty()) return ;
   try
   {
@@ -16310,6 +16322,7 @@ void ApplicationWindow::savedatainNexusFormat(const std::string& wsName,const st
 void ApplicationWindow::enableSaveNexus(const QString &wsName)
 {
   if (actionSaveFile) actionSaveFile->setEnabled(true);
+
   m_nexusInputWSName=wsName;
 }
 
