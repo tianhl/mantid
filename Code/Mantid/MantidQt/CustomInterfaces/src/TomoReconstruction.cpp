@@ -23,26 +23,20 @@ class OwnTreeWidgetItem : public QTreeWidgetItem
 {
 public:
   OwnTreeWidgetItem(QTreeWidgetItem *parent, QTreeWidgetItem *logicalParent = NULL,
-                    const std::string key = ""):
-    QTreeWidgetItem(parent)
+                    const std::string& key = ""):
+    QTreeWidgetItem(parent), m_rootParent(logicalParent), m_key(key)
   {
-    m_rootParent = logicalParent;
-    m_key=key;
   }
 
-  OwnTreeWidgetItem(QStringList list, QTreeWidgetItem *logicalParent = NULL, const std::string key = ""):
-    QTreeWidgetItem(list)
+  OwnTreeWidgetItem(QStringList list, QTreeWidgetItem *logicalParent = NULL, const std::string& key = ""):
+    QTreeWidgetItem(list), m_rootParent(logicalParent), m_key(key)
   {
-    m_rootParent = logicalParent;
-    m_key=key;
   }
 
   OwnTreeWidgetItem(QTreeWidgetItem *parent, QStringList list, QTreeWidgetItem *logicalParent = NULL,
-                    const std::string key = ""):
-    QTreeWidgetItem(parent, list)
+                    const std::string& key = ""):
+    QTreeWidgetItem(parent, list), m_rootParent(logicalParent), m_key(key)
   {
-    m_rootParent = logicalParent;
-    m_key=key;
   }
 
   QTreeWidgetItem* getRootParent()
