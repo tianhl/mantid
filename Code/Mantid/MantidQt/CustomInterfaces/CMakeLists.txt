@@ -68,6 +68,7 @@ set ( SRC_FILES
 	src/SANSRunWindow.cpp
 	src/StepScan.cpp
 	src/Stretch.cpp
+	src/TomoReconstruction.cpp
 	src/UserInputValidator.cpp
 	src/background.cpp
 	src/deltaECalc.cpp
@@ -155,6 +156,7 @@ set ( INC_FILES
 	inc/MantidQtCustomInterfaces/SANSRunWindow.h
 	inc/MantidQtCustomInterfaces/StepScan.h
 	inc/MantidQtCustomInterfaces/Stretch.h
+	inc/MantidQtCustomInterfaces/TomoReconstruction.h
 	inc/MantidQtCustomInterfaces/Updateable.h
 	inc/MantidQtCustomInterfaces/UserInputValidator.h
 	inc/MantidQtCustomInterfaces/deltaECalc.h
@@ -225,6 +227,7 @@ set ( MOC_FILES inc/MantidQtCustomInterfaces/Background.h
                 inc/MantidQtCustomInterfaces/SANSEventSlicing.h              
                 inc/MantidQtCustomInterfaces/SANSDiagnostics.h
                 inc/MantidQtCustomInterfaces/Stretch.h
+				inc/MantidQtCustomInterfaces/TomoReconstruction.h
                 inc/MantidQtCustomInterfaces/MantidEV.h
                 inc/MantidQtCustomInterfaces/StepScan.h
 )
@@ -258,6 +261,7 @@ set ( UI_FILES inc/MantidQtCustomInterfaces/AddWorkspace.ui
                inc/MantidQtCustomInterfaces/SANSRunWindow.ui  
                inc/MantidQtCustomInterfaces/SANSEventSlicing.ui
                inc/MantidQtCustomInterfaces/Stretch.ui
+			   inc/MantidQtCustomInterfaces/TomoReconstruction.ui
                inc/MantidQtCustomInterfaces/MantidEV.ui
                inc/MantidQtCustomInterfaces/StepScan.ui
 			   inc/MantidQtCustomInterfaces/EditLocalParameterDialog.ui
