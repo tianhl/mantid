@@ -50,6 +50,7 @@
 #include <QShortcut>
 #include <QProgressDialog>
 #include <QFile>
+#include <QPalette>
 
 #include <q3paintdevicemetrics.h>
 #include <q3dragobject.h>
@@ -134,7 +135,9 @@ void Table::init(int rows, int cols)
   connect(d_table, SIGNAL(valueChanged(int, int)), this, SLOT(cellEdited(int, int)));
 
   setAutoUpdateValues(applicationWindow()->autoUpdateTableValues());
-  //setWindowIcon(QIcon(getQPixmap("table_xpm")));
+  QPalette p = d_table->palette();
+  p.setColor(QColorGroup::Base, QColor(50, 50, 50));
+  d_table->setPalette(p);
 }
 
 void Table::setAutoUpdateValues(bool on)
@@ -3058,6 +3061,14 @@ void Table::setReadOnlyColumn(int col, bool on)
   d_table->setColumnReadOnly(col, on);
 }
 
+void Table::setReadOnlyAllColumns(bool on)
+{
+  for (int i = 0; i< this->numCols(); ++i)
+  {
+    d_table->setColumnReadOnly(i, on);
+  }
+}
+
 void Table::moveColumn(int, int fromIndex, int toIndex)
 {
   int to = toIndex;
@@ -3389,4 +3400,3 @@ void MyTable::resizeData(int n)
     Q3Table::resizeData(n);
   }
 }
-
