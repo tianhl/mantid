@@ -1493,10 +1493,22 @@ void MantidUI::showAlgorithmDialog(QString algName, QHash<QString,QString> param
   Mantid::API::IAlgorithm_sptr alg = this->createAlgorithm(algName, version);
   if( !alg ) return;
 
-  for(QHash<QString,QString>::Iterator it = paramList.begin(); it != paramList.end(); ++it)
+  // Algorithm::setPropertyValue can throw if there are issues (for example broken files
+  // passed as Filename= parameter to Load)
+  try
   {
-    alg->setPropertyValue(it.key().toStdString(),it.value().toStdString());
+    for(QHash<QString,QString>::Iterator it = paramList.begin(); it != paramList.end(); ++it)
+    {
+      alg->setPropertyValue(it.key().toStdString(),it.value().toStdString());
+    }
   }
+  catch(std::exception& e)
+  {
+    g_log.error() << "Found an unrecoverable error while trying to set input properties for algorithm '" <<
+      algName.toStdString() << "':" << std::endl << e.what() << std::endl;
+    return;
+  }
+
   MantidQt::API::AlgorithmDialog* dlg = createAlgorithmDialog(alg);
 
   if (algName == "Load") 

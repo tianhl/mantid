@@ -106,6 +106,12 @@ Load::Load() : Algorithm(), m_baseProps(), m_loader(), m_filenamePropName() {}
  * call.
  *  @param name The name of the property
  *  @param value The value of the property as a string
+ *
+ * Note: even though this method may look harmless/innocent it can
+ * throw exceptions (particularly from getFileLoader), so take that
+ * into account when initializing algorithms if you want to handle
+ * errors gracefully (such as passing a file name for a file that is
+ * non-obviously broken).
  */
 void Load::setPropertyValue(const std::string &name, const std::string &value) {
   // Call base class method in all cases.
@@ -200,6 +206,17 @@ API::IAlgorithm_sptr Load::getFileLoader(const std::string &filePath) {
         "Cannot find an algorithm that is able to load \"" + filePath +
         "\".\n"
         "Check that the file is a supported type.");
+  } catch (std::exception& e) {
+    // this happens for example with badly broken NeXus files which at first look
+    // fine and readable (see example in ticket #5805)
+    throw std::runtime_error(
+        "Found an algorithm that is in principle able to load \"" + filePath +
+        "\".\n"
+        "But it failed badly, producing this error: " + e.what() +
+        "\nIt looks like the file might be corrupted, "
+        "non-standard, or otherwise unloadable by the algorithm. "
+        "Please check that the file is a supported type and does not contain "
+        "errors.");
   }
   winningLoader->initialize();
   setUpLoader(winningLoader, 0, 1);
@@ -324,7 +341,15 @@ void Load::exec() {
   std::vector<std::vector<std::string>> fileNames = getProperty("Filename");
 
   // Test for loading as a single file
-  IAlgorithm_sptr loader = getFileLoader(fileNames[0][0]);
+  IAlgorithm_sptr loader;
+  try {
+    loader = getFileLoader(fileNames[0][0]);
+  } catch (std::exception& e) {
+    g_log.error() << "Load failed with the following error: " << std::endl <<
+      e.what();
+    return;
+  }
+
   auto ifl =
       boost::dynamic_pointer_cast<IFileLoader<Kernel::FileDescriptor>>(loader);
   auto iflNexus =
