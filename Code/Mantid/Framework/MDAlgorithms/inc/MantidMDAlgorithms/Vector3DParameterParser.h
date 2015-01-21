@@ -15,7 +15,6 @@ namespace DOM {
 class Element;
 }
 }
-
 namespace Mantid {
 namespace MDAlgorithms {
 /**
