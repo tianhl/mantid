@@ -264,8 +264,8 @@ def removeoutlayer(wksp):
         for j in range(len(x)-1):
             y=a1.readY(i)[j]
             if (y<2):
-                a1.dataY(i)[j]=0.0;
-                a1.dataE(i)[j]=0.0;
+                a1.dataY(i)[j]=0.0
+                a1.dataE(i)[j]=0.0
 
 def nrSESANSFn(runList,nameList,P0runList,P0nameList,minSpec,maxSpec,upPeriod,downPeriod,existingP0,SEConstants,gparams,convertToSEL,lnPOverLam,diagnostics="0",removeoutlayer="0",floodfile="none",):
     nlist=parseNameList(nameList)
