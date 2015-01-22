@@ -30,6 +30,8 @@
 #include "MantidQtAPI/AlgorithmRunner.h"
 #include <boost/shared_ptr.hpp>
 
+class QDragEnterEvent;
+class QDropEvent;
 
 namespace Mantid
 {
@@ -180,6 +182,10 @@ public slots:
   // Peaks overlay
   void peakOverlay_toggled(bool);
 
+protected:
+  void dragEnterEvent(QDragEnterEvent *e);
+  void dropEvent(QDropEvent *e);
+
 private:
   void loadSettings();
   void saveSettings();
@@ -321,6 +327,7 @@ private:
 
   /// Object for choosing a PeakTransformFactory based on the workspace type.
   Mantid::API::PeakTransformSelector m_peakTransformSelector;
+
 };
 
 } // namespace SliceViewer
