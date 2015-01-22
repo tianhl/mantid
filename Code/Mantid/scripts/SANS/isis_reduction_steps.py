@@ -1992,8 +1992,8 @@ class UserFile(ReductionStep):
             # SET CENTRE/HAB X Y
             main_str_pos = upper_line.find('MAIN')
             hab_str_pos = upper_line.find('HAB')
-            x_pos = 0.0;
-            y_pos = 0.0;
+            x_pos = 0.0
+            y_pos = 0.0
             if (main_str_pos > 0):
               values = upper_line[main_str_pos+5:].split() #remov the SET CENTRE/MAIN
               x_pos = float(values[0])/1000.0

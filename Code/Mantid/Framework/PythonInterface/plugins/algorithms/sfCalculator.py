@@ -566,13 +566,13 @@ class sfCalculator():
         peak_array = zeros(nbr_tof)
         peak_array_error = zeros(nbr_tof)
 
-        bMinBack = False;
-        bMaxBack = False;
+        bMinBack = False
+        bMaxBack = False
 
-        min_back = 0;
-        min_back_error = 0;
-        max_back = 0;
-        max_back_error = 0;
+        min_back = 0
+        min_back_error = 0
+        max_back = 0
+        max_back_error = 0
 
         for t in (range(nbr_tof-1)):
 
@@ -616,8 +616,8 @@ class sfCalculator():
 
             [final_value, final_error] = self.sumWithError(new_tmp_peak, new_tmp_peak_error)
 
-            peak_array[t] = final_value;
-            peak_array_error[t] = final_error;
+            peak_array[t] = final_value
+            peak_array_error[t] = final_error
 
 
         # make new workspace
@@ -1232,7 +1232,7 @@ def calculate(string_runs=None,
 
     """
 
-    list_attenuator = None;
+    list_attenuator = None
 
     #use default string files if not provided
     if (string_runs is None):
@@ -1269,7 +1269,7 @@ def calculate(string_runs=None,
 
     if (list_attenuator is None):
 #        list_attenuator = [0, 1, 1, 1, 1, 1, 1, 2, 2, 2, 3, 3, 4, 4]
-        list_attenuator = [0, 1, 1, 1, 1, 1];
+        list_attenuator = [0, 1, 1, 1, 1, 1]
 
     if (list_peak_back is None):
         list_peak_back = zeros((len(list_runs), 4))   #[peak_min, peak_max, back_min, back_max]
