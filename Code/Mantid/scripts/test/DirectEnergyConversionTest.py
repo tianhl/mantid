@@ -5,6 +5,7 @@ from mantid import api
 import unittest
 import inspect
 from Direct.DirectEnergyConversion import DirectEnergyConversion
+from Direct.PropertyManager  import PropertyManager
 import Direct.dgreduce as dgreduce
 
 
@@ -122,6 +123,7 @@ class DirectEnergyConversionTest(unittest.TestCase):
 
         white_ws = tReducer.do_white(wb_ws, None, None,None)
         self.assertTrue(white_ws)
+ 
 
     def test_get_set_attributes(self):
         tReducer = self.reducer
@@ -137,11 +139,11 @@ class DirectEnergyConversionTest(unittest.TestCase):
         self.assertTrue(tReducer._new_system_property)
 
         # direct and indirect access to prop_man properties
-
+        tReducer.sample_run = None
         #sample run has not been defined
-        self.assertRaises(KeyError,getattr,tReducer,'sample_run')
+        self.assertTrue(getattr(tReducer,'sample_run') is None)
         prop_man = tReducer.prop_man
-        self.assertRaises(KeyError,getattr,prop_man,'sample_run')
+        self.assertTrue(getattr(prop_man ,'sample_run') is None)
         # define sample run
         tReducer.sample_run =10234
         self.assertEqual(tReducer.sample_run,10234)
@@ -191,8 +193,8 @@ class DirectEnergyConversionTest(unittest.TestCase):
         par['ei_mon_spectra']=[4,5]
         par['abs_units_van_range']=[-4000,8000]
         # overwrite parameters, which are necessary from command line, but we want them to have test values
-        dgreduce.getReducer().prop_man.map_file=None;
-        dgreduce.getReducer().prop_man.monovan_mapfile=None;
+        dgreduce.getReducer().map_file=None
+        dgreduce.getReducer().monovan_mapfile=None
         dgreduce.getReducer().mono_correction_factor = 1
         #abs_units(wb_for_run,sample_run,monovan_run,wb_for_monovanadium,samp_rmm,samp_mass,ei_guess,rebin,map_file='default',monovan_mapfile='default',**kwargs):
         ws = dgreduce.abs_units(wb_ws,run_ws,None,wb_ws,10,100,8.8,[-10,0.1,7],None,None,**par)
@@ -206,6 +208,53 @@ class DirectEnergyConversionTest(unittest.TestCase):
     ##    tReducer.initialise("MAP")
 
     ##    tReducet.di
+    def test_energy_to_TOF_range(self):
+
+        ws = Load(Filename='MAR11001.raw',LoadMonitors='Include')
+        
+        en_range = [0.8*13,13,1.2*13]
+        detIDs=[1,2,3,10]
+        red = DirectEnergyConversion()
+        TRange = red.get_TOF_for_energies(ws,en_range,detIDs)
+        for ind,detID in enumerate(detIDs):
+            tof = TRange[ind]
+            y = [1]*(len(tof)-1)
+            ind = ws.getIndexFromSpectrumNumber(detID)
+            ExtractSingleSpectrum(InputWorkspace=ws, OutputWorkspace='_ws_template', WorkspaceIndex=ind)
+            CreateWorkspace(OutputWorkspace='TOF_WS',NSpec = 1,DataX=tof,DataY=y,UnitX='TOF',ParentWorkspace='_ws_template')
+            EnWs=ConvertUnits(InputWorkspace='TOF_WS',Target='Energy',EMode='Elastic')
+
+            eni = EnWs.dataX(0)
+            for samp,rez in zip(eni,en_range): self.assertAlmostEqual(samp,rez)
+
+        # Now Test shifted:
+        ei,mon1_peak,mon1_index,tzero = GetEi(InputWorkspace=ws, Monitor1Spec=int(2), Monitor2Spec=int(3),EnergyEstimate=13)
+        ScaleX(InputWorkspace='ws',OutputWorkspace='ws',Operation="Add",Factor=-mon1_peak,InstrumentParameter="DelayTime",Combine=True)
+        ws = mtd['ws']
+
+        mon1_det = ws.getDetector(1)
+        mon1_pos = mon1_det.getPos()
+        src_name = ws.getInstrument().getSource().getName()
+        MoveInstrumentComponent(Workspace='ws',ComponentName= src_name, X=mon1_pos.getX(), Y=mon1_pos.getY(), Z=mon1_pos.getZ(), RelativePosition=False)
+
+        # Does not work for monitor 2 as it has been moved to mon2 position and there all tof =0
+        detIDs=[1,3,10]
+        TRange1 = red.get_TOF_for_energies(ws,en_range,detIDs)
+
+        for ind,detID in enumerate(detIDs):
+            tof = TRange1[ind]
+            y = [1]*(len(tof)-1)
+            ind = ws.getIndexFromSpectrumNumber(detID)
+            ExtractSingleSpectrum(InputWorkspace=ws, OutputWorkspace='_ws_template', WorkspaceIndex=ind)
+            CreateWorkspace(OutputWorkspace='TOF_WS',NSpec = 1,DataX=tof,DataY=y,UnitX='TOF',ParentWorkspace='_ws_template')
+            EnWs=ConvertUnits(InputWorkspace='TOF_WS',Target='Energy',EMode='Elastic')
+
+            eni = EnWs.dataX(0)
+            for samp,rez in zip(eni,en_range): self.assertAlmostEqual(samp,rez)
+
+
+     
+
 
 
 if __name__=="__main__":

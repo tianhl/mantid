@@ -21,6 +21,10 @@ class PropDescriptor(object):
         """ returns the list of other properties names, this property depends on""" 
         return []
 # end PropDescriptor
+#-----------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------
+
 class IncidentEnergy(PropDescriptor):
     """ descriptor for incident energy or range of incident energies to be processed """
     def __init__(self): 
@@ -72,6 +76,7 @@ class IncidentEnergy(PropDescriptor):
             raise KeyError("Incident energy have to be positive number of list of positive numbers."+
                            " For value {0} got negative {1}".format(value,inc_en))
 # end IncidentEnergy
+#-----------------------------------------------------------------------------------------
 class EnergyBins(PropDescriptor):
     """ Property provides various energy bin possibilities """
     def __init__(self):
@@ -99,6 +104,7 @@ class EnergyBins(PropDescriptor):
        #TODO: implement single value settings according to rebin
        self._energy_bins = value
 #end EnergyBins
+#-----------------------------------------------------------------------------------------
 class SaveFileName(PropDescriptor):
     """ Property defines default file name to save result to
 
@@ -117,25 +123,25 @@ class SaveFileName(PropDescriptor):
                 name = instance.short_inst_name 
             else:
                 name = '_EMPTY'
-            try:
-                sr = instance.sample_run
-            except:
+
+            sr = owner.sample_run.run_number()
+            if not sr:
                 sr = 0
             try:
                 name +='{0:0<5}Ei{1:<4.2f}meV'.format(sr,instance.incident_energy)
                 if instance.sum_runs:
                     name +='sum'
-                if instance.monovan_run:
+                if owner.monovan_run.run_number():
                     name +='_Abs'
             except:
                 name = None
+        name = name.replace('.','d')
         return name
 
     def __set__(self,instance,value):
         self._file_name = value
 #end SaveFileName
-
-#
+#-----------------------------------------------------------------------------------------
 class InstrumentDependentProp(PropDescriptor):
     """ Generic property describing some aspects of instrument (e.g. name, short name etc), 
         which are undefined if no instrument is defined
@@ -154,7 +160,7 @@ class InstrumentDependentProp(PropDescriptor):
     def __set__(self,instance,values):
         raise AttributeError("Property {0} can not be assigned".format(self._prop_name))
 #end InstrumentDependentProp
-
+#-----------------------------------------------------------------------------------------
 def check_ei_bin_consistent(ei,binning_range):
     """ function verifies if the energy binning is consistent with incident energies """ 
     if isinstance(ei,list):
@@ -167,15 +173,15 @@ def check_ei_bin_consistent(ei,binning_range):
             return (False,'Max rebin range {0:f} exceeds incident energy {1:f}'.format(binning_range[2],ei))
 
     return (True,'')
-
+#-----------------------------------------------------------------------------------------
 class VanadiumRMM(PropDescriptor):
     """ define constant static rmm for vanadium """ 
     def __get__(self,instance,owner=None):
         """ return rmm for vanadium """
 
-        return 50.9415;
+        return 50.9415
     def __set__(self,instance,value):
-        raise AttributeError("Can not change vanadium rmm");
+        raise AttributeError("Can not change vanadium rmm")
 #end VanadiumRMM
 #-----------------------------------------------------------------------------------------
 # END Descriptors for NonIDF_Properties class
@@ -183,6 +189,68 @@ class VanadiumRMM(PropDescriptor):
 
 #-----------------------------------------------------------------------------------------
 # Descriptors, providing overloads for some complex properties in PropertyManager
+#-----------------------------------------------------------------------------------------
+class mon2NormalizationEnergyRange(PropDescriptor):
+    """ Energy range to integrate signal on monitor 2 when normalized by this monitor 
+        
+        This class contains relative range of energies in which the monitor-2 signal should 
+        be integrated, and returns the energy range for integration according to 
+        formula: range = [min_range*ei,max_range*ei] where ei is incident monitor energy
+
+        To find actual integration ranges one should convert these values into TOF (or 
+        convert monitor signal to energy)
+    """ 
+    def __init__(self):
+        # default range
+        self._relative_range = [0.8,1.2]
+
+
+    def __get__(self,instance,owner):
+       """ Return actual energy range from internal relative range and incident energy """
+       if instance is None:
+           return self
+       return [self._relative_range[0]*instance.incident_energy,self._relative_range[1]*instance.incident_energy]
+
+    def __set__(self,instance,val):
+       """ set detector calibration file using various formats """ 
+       if isinstance(val,list):
+           self._relative_range=self._check_range(val,instance)
+       elif isinstance(val,str):
+           val = self._parce_string2list(val)
+           self.__set__(instance,val)
+       else:
+           raise KeyError('mon2_norm_energy_range needs to be initialized by two values.\n'
+                          'Trying to assign value {0} of unknown type {1}'.format(val,type(val)))
+    #
+    def _check_range(self,val,instance):
+        """ method to check if list of values acceptable as ranges """
+        if len(val) != 2:
+            raise KeyError('mon2_normalization_energy_range can be initialized by list of two values only. Got {0} values'.format(len(val)))
+        val1 = float(val[0])
+        if val1<0.1 or val1 > 0.9:
+            message = "Lower mon2_norm_energy_range describes lower limit of energy to integrate neutron signal after the chopper.\n"\
+                      "The limit is defined as (this value)*incident_energy. Are you sure you want to set this_value to {0}?\n".format(val1)
+            if val1>1:
+                raise KeyError(message)
+            else:
+                instance.log(message,'warning')
+        val2 = float(val[1])
+        if val2<1.1 or val2 > 1.9:
+           message = "Upper mon2_norm_energy_range describes upper limit of energy to integrate neutron signal after the chopper.\n"\
+                     "The limit is defined as (this value)*incident_energy. Are you sure you want to set this_value to {0}?\n".format(val2)
+           if val2<1:
+               raise KeyError(message)
+           else:
+            instance.log(message,'warning')
+
+        return [val1,val2]
+    #
+    def _parce_string2list(self,val):
+        """ method splits input string containing comma into list of strings"""
+        value = val.strip('[]()')
+        val   = value.split(',')
+        return val
+
 #-----------------------------------------------------------------------------------------
 class PropertyFromRange(PropDescriptor):
     """ Descriptor for property, which can have one value from a list of values """
@@ -203,7 +271,7 @@ class PropertyFromRange(PropDescriptor):
        else:
            raise KeyError(' Property can not have value {0}'.format(val))
 
-
+#-----------------------------------------------------------------------------------------
 class DetCalFile(PropDescriptor):
     """ property describes various sources for the detector calibration file """
     def __init__(self):
@@ -228,7 +296,9 @@ class DetCalFile(PropDescriptor):
   
 
        if isinstance(val,int):
-          file_name= common.find_file(val)
+          #if val in instance.all_run_numbers: TODO: retrieve workspace from run numbers
+          file_hint = str(val)
+          file_name= FileFinder.findRuns(file_hint)[0]
           self._det_cal_file = file_name
           return
 
@@ -241,7 +311,7 @@ class DetCalFile(PropDescriptor):
     #else:
     #    Reducer.log('Setting detector calibration to detector block info from '+str(sample_run))
 #end DetCalFile
-
+#-----------------------------------------------------------------------------------------
 class MapMaskFile(PropDescriptor):
     """ common method to wrap around an auxiliary file name """
     def __init__(self,file_ext,doc_string=None):
@@ -264,7 +334,7 @@ class MapMaskFile(PropDescriptor):
         self._file_name=value;
   
 #end MapMaskFile
-
+#-----------------------------------------------------------------------------------------
 class HardMaskPlus(prop_helpers.ComplexProperty):
     """ Legacy HardMaskPlus class which sets up hard_mask_file to file and use_hard_mask_only to True""" 
     def __init__(self):
@@ -289,10 +359,7 @@ class HardMaskPlus(prop_helpers.ComplexProperty):
         except:
            pass
  
-
-
-
-
+#-----------------------------------------------------------------------------------------
 class HardMaskOnly(prop_helpers.ComplexProperty):
     """ Sets diagnostics algorithm to use hard mask file provided and to disable all other diagnostics routines
 
@@ -335,11 +402,9 @@ class HardMaskOnly(prop_helpers.ComplexProperty):
         try:
              del instance.__changed_properties['hardmaskPlus']
         except:
-           pass
- 
-
-  
+           pass 
 #end HardMaskOnly
+#-----------------------------------------------------------------------------------------
 
 class MonovanIntegrationRange(prop_helpers.ComplexProperty):
     """ integration range for monochromatic vanadium 
@@ -408,7 +473,7 @@ class MonovanIntegrationRange(prop_helpers.ComplexProperty):
                     "defining min/max values of integration range or None to use relative to incident energy limits")
             prop_helpers.ComplexProperty.__set__(self,tDict,value)
 #end MonovanIntegrationRange
-
+#-----------------------------------------------------------------------------------------
 
 class SpectraToMonitorsList(PropDescriptor):
    """ property describes list of spectra, used as monitors to estimate incident energy
@@ -458,6 +523,7 @@ class SpectraToMonitorsList(PropDescriptor):
                 result =[int(spectra_list)];
        return result
 #end SpectraToMonitorsList
+#-----------------------------------------------------------------------------------------
 
 class SaveFormat(PropDescriptor):
    # formats available for saving the data
@@ -505,6 +571,7 @@ class SaveFormat(PropDescriptor):
         #end if different types
         self._save_format.add(value)
 #end SaveFormat
+#-----------------------------------------------------------------------------------------
 
 class DiagSpectra(PropDescriptor):
     """ class describes spectra list which should be used in diagnostics 
@@ -547,6 +614,7 @@ class DiagSpectra(PropDescriptor):
         else:
             raise ValueError("Spectra For diagnostics can be a string inthe form (num1,num2);(num3,num4) etc. or None")
 #end class DiagSpectra
+#-----------------------------------------------------------------------------------------
 
 class BackbgroundTestRange(PropDescriptor):
     """ The TOF range used in diagnostics to reject high background spectra. 
@@ -564,7 +632,7 @@ class BackbgroundTestRange(PropDescriptor):
        if self._background_test_range:
             return self._background_test_range  
        else:
-            return instance.bkgd_range;
+            return instance.bkgd_range
 
     def __set__(self,instance,value):
         if value is None:
@@ -575,11 +643,10 @@ class BackbgroundTestRange(PropDescriptor):
         if len(value) != 2:
             raise ValueError("background test range can be set to a 2 element list of floats")
         self._background_test_range = [float(value[0]),float(value[1])]
-
 #end BackbgroundTestRange
 
 #-----------------------------------------------------------------------------------------
-# END Descriptors, property manager itself
+# END Descriptors for PropertyManager itself
 #-----------------------------------------------------------------------------------------
 
 

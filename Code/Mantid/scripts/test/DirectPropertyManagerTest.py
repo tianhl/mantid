@@ -5,7 +5,7 @@ from mantid import api
 import unittest
 import inspect
 import numpy as np
-import sys
+import sys,copy
 from Direct.PropertyManager import PropertyManager
 
 
@@ -203,8 +203,6 @@ class DirectPropertyManagerTest(unittest.TestCase):
         self.assertEqual(200,propman.ei_mon_spectra[1])
 
 
-
-
     def test_set_get_mono_range(self):
         # TODO : A lot of changes and tests here for mono_range
         propman = self.prop_man
@@ -365,21 +363,6 @@ class DirectPropertyManagerTest(unittest.TestCase):
         propman.background_test_range = [1000,2000];
         bkg_test_range = propman.background_test_range;
         self.assertEqual(bkg_test_range,[1000,2000])
-
-    def test_get_sample_ws_name(self):
-        propman = self.prop_man
-
-        # no workspace name if sample is not defined. 
-        self.assertRaises(KeyError,propman.get_sample_ws_name)
-
-        propman.sample_run = 0;
-        ws_name = propman.get_sample_ws_name();
-        self.assertEqual(ws_name,'MARI000000_spe')
-
-        propman.sum_runs = 3
-        ws_name = propman.get_sample_ws_name();
-        self.assertEqual(ws_name,'MARI000000_spe-sum')
-
 
     def test_check_monovan_changed(self):
          propman = self.prop_man 
@@ -591,9 +574,12 @@ class DirectPropertyManagerTest(unittest.TestCase):
        propman = self.prop_man
 
        propman.incident_energy = 10
+       propman.sample_run = 0
+       propman.monovan_run = None 
+
 
        name = propman.save_file_name
-       self.assertEqual(name,'MAR00000Ei10.00meV')
+       self.assertEqual(name,'MAR00000Ei10d00meV')
 
     def test_log_to_Mantid(self):
         propman = self.prop_man
@@ -722,10 +708,55 @@ class DirectPropertyManagerTest(unittest.TestCase):
         propman.energy_bins = None
         self.assertFalse(propman.energy_bins)
        
-        #TODO: this one is not completed
+        #TODO: this one is not completed. Multirep mode to come
+
+    def test_monitors_list(self):
+        propman = self.prop_man
+        mons = propman.get_used_monitors_list()
+        self.assertEqual(len(mons),3)
+
+        propman.normalise_method = None
+        mons = propman.get_used_monitors_list()
+        self.assertEqual(len(mons),2)
+
+        propman.normalise_method = 'monitor-2'
+        mons = propman.get_used_monitors_list()
+        self.assertEqual(len(mons),2)
+
+    def test_mon2_integration_range(self):
+        propman = self.prop_man
+        propman.incident_energy = 10
+        range = propman.mon2_norm_energy_range
+
+        # check defaults
+        self.assertAlmostEqual(range[0],8.)
+        self.assertAlmostEqual(range[1],12.)
+
+        propman.mon2_norm_energy_range=[0.7,1.3]
+        range = propman.mon2_norm_energy_range
+        self.assertAlmostEqual(range[0],7.)
+        self.assertAlmostEqual(range[1],13.)
+
+        propman.mon2_norm_energy_range='[0.5,1.5]'
+        range = propman.mon2_norm_energy_range
+        self.assertAlmostEqual(range[0],5.)
+        self.assertAlmostEqual(range[1],15.)
+
+        propman.mon2_norm_energy_range='0.6,1.4'
+        range = propman.mon2_norm_energy_range
+        self.assertAlmostEqual(range[0],6.)
+        self.assertAlmostEqual(range[1],14.)
 
 
-    
+        self.assertRaises(KeyError,setattr,propman,'mon2_norm_energy_range',10)
+        self.assertRaises(KeyError,setattr,propman,'mon2_norm_energy_range','[0.95,1.05,4]')
+        self.assertRaises(KeyError,setattr,propman,'mon2_norm_energy_range','[0.05,0.9]')
+
+        propman.mon2_norm_energy_range='0.95,1.05'
+        range = propman.mon2_norm_energy_range
+        self.assertAlmostEqual(range[0],9.5)
+        self.assertAlmostEqual(range[1],10.5)
+
 
 if __name__=="__main__":
     unittest.main()

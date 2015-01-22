@@ -89,8 +89,8 @@ def MainProperties(main_prop_definition):
         properties = main_prop_definition(*args)
         #print "in decorator: ",properties
         host = args[0];
-        host._main_properties=properties;
-        host.iliad_prop.set_input_parameters(**properties);
+        host._main_properties=properties
+        host.iliad_prop.set_input_parameters(**properties)
         return properties
 
     return main_prop_wrapper
@@ -100,9 +100,9 @@ def AdvancedProperties(adv_prop_definition):
     def advanced_prop_wrapper(*args):
         properties = adv_prop_definition(*args)
         #print "in decorator: ",properties
-        host = args[0];
-        host._advanced_properties=properties;
-        host.iliad_prop.set_input_parameters(**properties);
+        host = args[0]
+        host._advanced_properties=properties
+        host.iliad_prop.set_input_parameters(**properties)
         return properties
 
     return advanced_prop_wrapper
@@ -139,7 +139,7 @@ def iliad(main):
             input_file=None
             output_directory=None
 
-        use_web_variables= False;
+        use_web_variables= False
         if host._web_var and output_directory:
             use_web_variables = True;
             config.appendDataSearchDir(str(output_directory))
