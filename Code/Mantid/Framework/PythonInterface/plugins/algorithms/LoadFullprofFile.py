@@ -163,13 +163,13 @@ class LoadFullprofFile(PythonAlgorithm):
         
         tablews.addColumn("int", "H")
         tablews.addColumn("int", "K")
-        tablews.addColumn("int", "L"); 
-        tablews.addColumn("double", "Alpha"); 
-        tablews.addColumn("double", "Beta"); 
-        tablews.addColumn("double", "Sigma2"); 
-        tablews.addColumn("double", "Gamma"); 
-        tablews.addColumn("double", "FWHM"); 
-        tablews.addColumn("double", "PeakHeight"); 
+        tablews.addColumn("int", "L")
+        tablews.addColumn("double", "Alpha")
+        tablews.addColumn("double", "Beta")
+        tablews.addColumn("double", "Sigma2")
+        tablews.addColumn("double", "Gamma")
+        tablews.addColumn("double", "FWHM")
+        tablews.addColumn("double", "PeakHeight")
 
         # 2. Add rows
         for hkl in sorted(hkldict.keys()):

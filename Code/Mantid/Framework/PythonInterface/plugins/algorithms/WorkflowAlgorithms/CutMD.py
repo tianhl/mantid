@@ -228,7 +228,7 @@ class CutMD(DataProcessorAlgorithm):
         
         x_extents = self.__extents_in_current_projection(to_cut, 0)
         y_extents = self.__extents_in_current_projection(to_cut, 1)
-        z_extents = self.__extents_in_current_projection(to_cut, 2); 
+        z_extents = self.__extents_in_current_projection(to_cut, 2)
         
         projection = self.__uvw_from_projection_table(projection_table)
         target_units = self.__units_from_projection_table(projection_table)
@@ -242,7 +242,7 @@ class CutMD(DataProcessorAlgorithm):
         if not p4_bins_property.isDefault:
             if (ndims == 4):
                 n_args = len(p4_bins)
-                min, max = self.__extents_in_current_projection(to_cut, 3); 
+                min, max = self.__extents_in_current_projection(to_cut, 3)
                 d_range = max - min
                 if n_args == 1:
                     step_size = p4_bins[0]
