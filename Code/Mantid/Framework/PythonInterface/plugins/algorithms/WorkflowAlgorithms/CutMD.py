@@ -226,8 +226,8 @@ class CutMD(DataProcessorAlgorithm):
         p4_bins_property = self.getProperty("P4Bin")
         p4_bins = p4_bins_property.value 
         
-        x_extents = self.__extents_in_current_projection(to_cut, 0);
-        y_extents = self.__extents_in_current_projection(to_cut, 1);
+        x_extents = self.__extents_in_current_projection(to_cut, 0)
+        y_extents = self.__extents_in_current_projection(to_cut, 1)
         z_extents = self.__extents_in_current_projection(to_cut, 2); 
         
         projection = self.__uvw_from_projection_table(projection_table)

@@ -20,8 +20,8 @@ def LoadDictionary( *filenames, **kwargs ):
 
   file = open(filenames[0])
   for line in file:
-    line = line.strip();
-    line = line.rstrip();
+    line = line.strip()
+    line = line.rstrip()
     if (not line.startswith('#')) and len(line) > 2:
       words = line.split()
       # error check the number of values
@@ -51,7 +51,7 @@ def LoadDictionary( *filenames, **kwargs ):
   if len(filenames) > 1:
     return LoadDictionary(*filenames[1:], existing=params_dictionary)
   else:
-    return params_dictionary;
+    return params_dictionary
 
 #
 # Return a list of run numbers from a string containing a comma separated

@@ -161,8 +161,8 @@ class LoadFullprofFile(PythonAlgorithm):
         # 1. Set up columns
         tablews = WorkspaceFactory.createTable()
         
-        tablews.addColumn("int", "H");
-        tablews.addColumn("int", "K");
+        tablews.addColumn("int", "H")
+        tablews.addColumn("int", "K")
         tablews.addColumn("int", "L"); 
         tablews.addColumn("double", "Alpha"); 
         tablews.addColumn("double", "Beta"); 

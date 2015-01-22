@@ -93,7 +93,7 @@ class PoldiMerge(PythonAlgorithm):
         # This is related to ticket #10090, where a new field in new data is used
         # when that ticket is finished, new data files will not need this
         # cleanup method anymore.
-        return np.floor((chopperSpeed + 250.0) / 500.0) * 500.0;
+        return np.floor((chopperSpeed + 250.0) / 500.0) * 500.0
 
     def instrumentsMatch(self, leftWorkspace, rightWorkspace):
         leftInstrument = leftWorkspace.getInstrument()
@@ -112,7 +112,7 @@ class PoldiMerge(PythonAlgorithm):
             if abs(leftValue - rightValue) > 1e-12:
                 raise RuntimeError("Instrument parameter '%s'/'%s' does not match" % parameterTuple)
 
-        return True;
+        return True
 
     def getParameterValue(self, instrument, parameterTuple):
         return instrument.getComponentByName(parameterTuple[0]).getNumberParameter(parameterTuple[1])[0]
