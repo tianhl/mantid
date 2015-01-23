@@ -31,9 +31,13 @@ using namespace Mantid::API;
 ///Constructor
 DataComparison::DataComparison(QWidget *parent) :
   UserSubWindow(parent),
+  WorkspaceObserver(),
   m_plot(new QwtPlot(parent)),
   m_diffWorkspaceNames(qMakePair(QString(), QString()))
 {
+  observeAfterReplace();
+  observeRename();
+  observePreDelete();
 }
 
 
@@ -91,9 +95,66 @@ void DataComparison::initLayout()
  */
 void DataComparison::addData()
 {
-  QString dataName = m_uiForm.dsData->getCurrentDataName();
+  const QString dataName = m_uiForm.dsData->getCurrentDataName();
+
+  // Do nothing if the data is not found
+  if(!AnalysisDataService::Instance().doesExist(dataName.toStdString()))
+    return;
+
+  // Get the workspace
+  Workspace_const_sptr ws = AnalysisDataService::Instance().retrieveWS<Workspace>(dataName.toStdString());
+  WorkspaceGroup_const_sptr wsGroup = boost::dynamic_pointer_cast<const WorkspaceGroup>(ws);
 
   m_uiForm.twCurrentData->blockSignals(true);
+
+  // If this is a WorkspaceGroup then add all items
+  if(wsGroup != NULL)
+  {
+    size_t numWs = wsGroup->size();
+    for(size_t wsIdx = 0; wsIdx < numWs; wsIdx++)
+    {
+      addDataItem(wsGroup->getItem(wsIdx));
+    }
+  }
+  // Otherwise just add the single workspace
+  else
+  {
+    addDataItem(ws);
+  }
+
+  m_uiForm.twCurrentData->blockSignals(false);
+
+  // Fit columns
+  m_uiForm.twCurrentData->resizeColumnsToContents();
+
+  // Replot the workspaces
+  plotWorkspaces();
+}
+
+
+/**
+ * Adds a MatrixWorkspace by name to the data table.
+ *
+ * @param wsName Name of workspace to add.
+ */
+void DataComparison::addDataItem(Workspace_const_sptr ws)
+{
+  // Check that the workspace is the correct type
+  MatrixWorkspace_const_sptr matrixWs = boost::dynamic_pointer_cast<const MatrixWorkspace>(ws);
+  if(!matrixWs)
+  {
+    g_log.error() << "Workspace " << ws->name() << "is of incorrect type!" << std::endl;
+    return;
+  }
+
+  // Check that the workspace does not already exist in the comparison
+  if(containsWorkspace(matrixWs))
+  {
+    g_log.information() << "Workspace " << matrixWs->name() << " already shown in comparison." << std::endl;
+    return;
+  }
+
+  QString wsName = QString::fromStdString(matrixWs->name());
 
   // Append a new row to the data table
   int currentRows = m_uiForm.twCurrentData->rowCount();
@@ -126,7 +187,7 @@ void DataComparison::addData()
   m_uiForm.twCurrentData->setCellWidget(currentRows, COLOUR, colourCombo);
 
   // Insert the workspace name
-  QTableWidgetItem *wsNameItem = new QTableWidgetItem(tr(dataName));
+  QTableWidgetItem *wsNameItem = new QTableWidgetItem(tr(wsName));
   wsNameItem->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
   m_uiForm.twCurrentData->setItem(currentRows, WORKSPACE_NAME, wsNameItem);
 
@@ -141,14 +202,27 @@ void DataComparison::addData()
   QTableWidgetItem *currentSpecItem = new QTableWidgetItem(tr("n/a"));
   currentSpecItem->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
   m_uiForm.twCurrentData->setItem(currentRows, CURRENT_SPEC, currentSpecItem);
+}
 
-  m_uiForm.twCurrentData->blockSignals(false);
 
-  // Fit columns
-  m_uiForm.twCurrentData->resizeColumnsToContents();
+/**
+ * Determines if a given workspace is currently shown in the UI.
+ *
+ * @param ws Pointer to the workspace
+ */
+bool DataComparison::containsWorkspace(MatrixWorkspace_const_sptr ws)
+{
+  QString testWsName = QString::fromStdString(ws->name());
 
-  // Replot the workspaces
-  plotWorkspaces();
+  int numRows = m_uiForm.twCurrentData->rowCount();
+  for(int row = 0; row < numRows; row++)
+  {
+    QString workspaceName = m_uiForm.twCurrentData->item(row, WORKSPACE_NAME)->text();
+    if(workspaceName == testWsName)
+      return true;
+  }
+
+  return false;
 }
 
 
@@ -448,12 +522,23 @@ void DataComparison::plotDiffWorkspace()
   extractWs2Alg->execute();
   MatrixWorkspace_sptr ws2SpecWs = extractWs2Alg->getProperty("OutputWorkspace");
 
+  // Rebin the second workspace to the first
+  // (needed for identical binning for Minus algorithm)
+  IAlgorithm_sptr rebinAlg = AlgorithmManager::Instance().create("RebinToWorkspace");
+  rebinAlg->setChild(true);
+  rebinAlg->initialize();
+  rebinAlg->setProperty("WorkspaceToRebin", ws2SpecWs);
+  rebinAlg->setProperty("WorkspaceToMatch", ws1SpecWs);
+  rebinAlg->setProperty("OutputWorkspace", "__ws2_spec_rebin");
+  rebinAlg->execute();
+  MatrixWorkspace_sptr rebinnedWs2SpecWs = rebinAlg->getProperty("OutputWorkspace");
+
   // Subtract the two extracted spectra
   IAlgorithm_sptr minusAlg = AlgorithmManager::Instance().create("Minus");
   minusAlg->setChild(true);
   minusAlg->initialize();
   minusAlg->setProperty("LHSWorkspace", ws1SpecWs);
-  minusAlg->setProperty("RHSWorkspace", ws2SpecWs);
+  minusAlg->setProperty("RHSWorkspace", rebinnedWs2SpecWs);
   minusAlg->setProperty("OutputWorkspace", "__diff");
   minusAlg->execute();
   MatrixWorkspace_sptr diffWorkspace = minusAlg->getProperty("OutputWorkspace");
@@ -574,4 +659,85 @@ void DataComparison::resetView()
 
   // Set this as the default zoom level
   m_zoomTool->setZoomBase(true);
+}
+
+
+/**
+ * Handles removing a workspace when it is deleted from ADS.
+ *
+ * @param wsName Name of the workspace being deleted
+ * @param ws Pointer to the workspace
+ */
+void DataComparison::preDeleteHandle(const std::string& wsName,const boost::shared_ptr<Mantid::API::Workspace> ws)
+{
+  UNUSED_ARG(ws);
+  QString oldWsName = QString::fromStdString(wsName);
+
+  // Find the row in the data table for the workspace
+  int numRows = m_uiForm.twCurrentData->rowCount();
+  for(int row = 0; row < numRows; row++)
+  {
+    // Remove the row
+    QString workspaceName = m_uiForm.twCurrentData->item(row, WORKSPACE_NAME)->text();
+    if(workspaceName == oldWsName)
+    {
+      m_uiForm.twCurrentData->removeRow(row);
+      break;
+    }
+  }
+
+  // Detach the old curve from the plot if it exists
+  if(m_curves.contains(oldWsName))
+    m_curves[oldWsName]->attach(NULL);
+
+  // Update the plot
+  plotWorkspaces();
+}
+
+
+/**
+ * Handle a workspace being renamed.
+ *
+ * @param oldName Old name for the workspace
+ * @param newName New name for the workspace
+ */
+void DataComparison::renameHandle(const std::string &oldName, const std::string &newName)
+{
+  QString oldWsName = QString::fromStdString(oldName);
+
+  // Find the row in the data table for the workspace
+  int numRows = m_uiForm.twCurrentData->rowCount();
+  for(int row = 0; row < numRows; row++)
+  {
+    // Rename the workspace in the data table
+    QString workspaceName = m_uiForm.twCurrentData->item(row, WORKSPACE_NAME)->text();
+    if(workspaceName == oldWsName)
+    {
+      m_uiForm.twCurrentData->item(row, WORKSPACE_NAME)->setText(QString::fromStdString(newName));
+      break;
+    }
+  }
+
+  // Detach the old curve from the plot if it exists
+  if(m_curves.contains(oldWsName))
+    m_curves[oldWsName]->attach(NULL);
+
+  // Update the plot
+  plotWorkspaces();
+}
+
+
+/**
+ * Handle replotting after a workspace has been changed.
+ *
+ * @param wsName Name of changed workspace
+ * @ws Pointer to changed workspace
+ */
+void DataComparison::afterReplaceHandle(const std::string& wsName,const boost::shared_ptr<Mantid::API::Workspace> ws)
+{
+  UNUSED_ARG(wsName);
+  UNUSED_ARG(ws);
+
+  // Update the plot
+  plotWorkspaces();
 }
