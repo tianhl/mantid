@@ -14,14 +14,14 @@ class ReductionWrapper(object):
         locations
     """ 
     def __init__(self,instrumentName,web_var=None):
-      """ sets properties defaults for the instrument with Name"""
-      self.iliad_prop = DirectPropertyManager(instrumentName)
+        """ sets properties defaults for the instrument with Name"""
+        self.iliad_prop = DirectPropertyManager(instrumentName)
       # the variables which are set up from the main properties
-      self._main_properties=[];
+        self._main_properties=[];
       # the variables which are set up from the advanced properties.
-      self._advanced_properties=[];
+        self._advanced_properties=[];
       # The variables which are set up from web interface. 
-      self._web_var = web_var;
+        self._web_var = web_var;
 
     def export_changed_values(self,FileName='reduce_vars.py'):
         """ Method to write changed simple and advanced properties into dictionary, to process by 
@@ -32,22 +32,22 @@ class ReductionWrapper(object):
         f.write("standard_vars = {\n")
         str_wrapper = '         '
         for key,val in self._main_properties.iteritems():
-                  if isinstance(val,str):
-                      row = "{0}\'{1}\':\'{2}\'".format(str_wrapper,key,val)
-                  else:
-                      row = "{0}\'{1}\':{2}".format(str_wrapper,key,val)
-                  f.write(row);
-                  str_wrapper=',\n         '
+            if isinstance(val,str):
+                row = "{0}\'{1}\':\'{2}\'".format(str_wrapper,key,val)
+            else:
+                row = "{0}\'{1}\':{2}".format(str_wrapper,key,val)
+            f.write(row);
+            str_wrapper=',\n         '
         f.write("}\nadvanced_vars={\n")
 
         str_wrapper='         '
         for key,val in self._advanced_properties.iteritems():
-                  if isinstance(val,str):
-                      row = "{0}\'{1}\':\'{2}\'".format(str_wrapper,key,val)
-                  else:
-                      row = "{0}\'{1}\':{2}".format(str_wrapper,key,val)
-                  f.write(row);
-                  str_wrapper=',\n        '
+            if isinstance(val,str):
+                row = "{0}\'{1}\':\'{2}\'".format(str_wrapper,key,val)
+            else:
+                row = "{0}\'{1}\':{2}".format(str_wrapper,key,val)
+            f.write(row);
+            str_wrapper=',\n        '
         f.write("}\n")
         f.close();
 

@@ -452,9 +452,9 @@ def WavRangeReduction(wav_start=None, wav_end=None, full_trans_wav=None, name_su
     if merge_flag:
         retWSname_merged = retWSname_rear
         if retWSname_merged.count('rear') == 1:
-          retWSname_merged = retWSname_merged.replace('rear', 'merged')
+            retWSname_merged = retWSname_merged.replace('rear', 'merged')
         else:
-          retWSname_merged = retWSname_merged + "_merged"
+            retWSname_merged = retWSname_merged + "_merged"
 
         Nf = mtd[retWSname_front+"_sumOfNormFactors"]
         Nr = mtd[retWSname_rear+"_sumOfNormFactors"]

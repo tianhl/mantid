@@ -25,10 +25,10 @@ class CalibrateRectangularDetectors(PythonAlgorithm):
 
         instruments = []
         for instr in sns.instruments():
-          for tech in instr.techniques():
-            if "Neutron Diffraction" == str(tech):
-              instruments.append(instr.shortName())
-              break
+            for tech in instr.techniques():
+                if "Neutron Diffraction" == str(tech):
+                    instruments.append(instr.shortName())
+                    break
         self.declareProperty("Instrument", "PG3",
                              StringListValidator(instruments))
         validator = IntArrayBoundedValidator()
@@ -232,8 +232,8 @@ class CalibrateRectangularDetectors(PythonAlgorithm):
             y_s = wksp.readY(s)
             midBin = wksp.blocksize()/2
             if y_s[midBin] > ymax:
-                    refpixel = s
-                    ymax = y_s[midBin]
+                refpixel = s
+                ymax = y_s[midBin]
         self.log().information("Reference spectra=%s" % refpixel)
         # Remove old calibration files
         cmd = "rm "+calib
@@ -253,7 +253,7 @@ class CalibrateRectangularDetectors(PythonAlgorithm):
                            XMin=-self._ccnumber, XMax=self._ccnumber,
                            MaxOffset=self._maxoffset, MaskWorkspace=str(wksp)+"mask")
         if AnalysisDataService.doesExist(str(wksp)+"cc"):
-                AnalysisDataService.remove(str(wksp)+"cc")
+            AnalysisDataService.remove(str(wksp)+"cc")
         if self._peakpos2 > 0.0:
             wksp = Rebin(InputWorkspace=wksp, OutputWorkspace=wksp.name(),
                          Params=str(self._peakmin2)+","+str(abs(self._binning[1]))+","+str(self._peakmax2))
@@ -263,8 +263,8 @@ class CalibrateRectangularDetectors(PythonAlgorithm):
                 y_s = wksp.readY(s)
                 midBin = wksp.blocksize()/2
                 if y_s[midBin] > ymax:
-                        refpixel = s
-                        ymax = y_s[midBin]
+                    refpixel = s
+                    ymax = y_s[midBin]
             msg = "Reference spectra = %s, lastpixel_3 = %s" % (refpixel, self._lastpixel3)
             self.log().information(msg)
             self._lastpixel2 = wksp.getNumberHistograms()*self._lastpixel2/self._lastpixel3-1
@@ -294,8 +294,8 @@ class CalibrateRectangularDetectors(PythonAlgorithm):
                 y_s = wksp.readY(s)
                 midBin = wksp.blocksize()/2
                 if y_s[midBin] > ymax:
-                        refpixel = s
-                        ymax = y_s[midBin]
+                    refpixel = s
+                    ymax = y_s[midBin]
             self.log().information("Reference spectra=%s" % refpixel)
             CrossCorrelate(InputWorkspace=wksp, OutputWorkspace=str(wksp)+"cc3",
                            ReferenceSpectra=refpixel,

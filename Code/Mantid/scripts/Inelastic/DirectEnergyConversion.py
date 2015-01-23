@@ -182,7 +182,7 @@ class DirectEnergyConversion(object):
         # if input parameter is workspace rather then run, we want to keep it
         self._keep_wb_workspace = False
         if isinstance(white,str) and white in mtd:
-         self._keep_wb_workspace = True
+            self._keep_wb_workspace = True
         if isinstance(white,api.Workspace) : # it is workspace itself
             self._keep_wb_workspace = True
 
@@ -408,8 +408,8 @@ class DirectEnergyConversion(object):
         # For event mode, we are going to histogram in energy first, then go back to TOF
         if propman.check_background== True:
            # Extract the time range for the background determination before we throw it away
-           background_bins = "%s,%s,%s" % (propman.bkgd_range[0] + bin_offset, (propman.bkgd_range[1]-propman.bkgd_range[0]), propman.bkgd_range[1] + bin_offset)
-           Rebin(InputWorkspace=result_name,OutputWorkspace= "background_origin_ws",Params=background_bins)
+            background_bins = "%s,%s,%s" % (propman.bkgd_range[0] + bin_offset, (propman.bkgd_range[1]-propman.bkgd_range[0]), propman.bkgd_range[1] + bin_offset)
+            Rebin(InputWorkspace=result_name,OutputWorkspace= "background_origin_ws",Params=background_bins)
 
         # Convert to Et
         ConvertUnits(InputWorkspace=result_name,OutputWorkspace= "_tmp_energy_ws", Target="DeltaE",EMode="Direct", EFixed=ei_value)
@@ -501,8 +501,8 @@ class DirectEnergyConversion(object):
             Rebin(InputWorkspace=result_name,OutputWorkspace=result_name,Params= energy_bins,PreserveEvents=False)
 
         if prop_man.apply_detector_eff:
-           DetectorEfficiencyCor(InputWorkspace=result_name,OutputWorkspace=result_name)
-           prop_man.log("_do_mono: finished DetectorEfficiencyCor for : "+result_name,'information')
+            DetectorEfficiencyCor(InputWorkspace=result_name,OutputWorkspace=result_name)
+            prop_man.log("_do_mono: finished DetectorEfficiencyCor for : "+result_name,'information')
         #############
         return
 
@@ -513,10 +513,10 @@ class DirectEnergyConversion(object):
         normalization to a white-beam vanadium run.
         """
         if (self._do_ISIS_normalization):
-           self._do_mono_ISIS(data_ws,monitor_ws,result_name,ei_guess,
+            self._do_mono_ISIS(data_ws,monitor_ws,result_name,ei_guess,
                                white_run, map_file, spectra_masks, Tzero)
         else:
-           self._do_mono_SNS(data_ws,monitor_ws,result_name,ei_guess,
+            self._do_mono_SNS(data_ws,monitor_ws,result_name,ei_guess,
                          white_run, map_file, spectra_masks, Tzero)
 
         prop_man = self.prop_man;
@@ -547,21 +547,21 @@ class DirectEnergyConversion(object):
         return result_ws
 
     def convert_to_energy(self,wb_run=None,sample_run=None,ei_guess=None,rebin=None,map_file=None,monovan_run=None,wb_for_monovan_run=None,**kwargs):
-      """ One step conversion of run into workspace containing information about energy transfer
+        """ One step conversion of run into workspace containing information about energy transfer
 
       """ 
       # Support for old reduction interface:
-      self.prop_man.set_input_parameters_ignore_nan(wb_run=wb_run,sample_run=sample_run,incident_energy=ei_guess,
+        self.prop_man.set_input_parameters_ignore_nan(wb_run=wb_run,sample_run=sample_run,incident_energy=ei_guess,
                                            energy_bins=rebin,map_file=map_file,monovan_run=monovan_run,wb_for_monovan_run=wb_for_monovan_run)
       # 
-      self.prop_man.set_input_parameters(**kwargs);
+        self.prop_man.set_input_parameters(**kwargs);
 
       # output workspace name.
-      try:
-          n,r=funcreturns.lhs_info('both')
-          wksp_out=r[0]
-      except:
-          wksp_out = self.prop_man.get_sample_ws_name();
+        try:
+            n,r=funcreturns.lhs_info('both')
+            wksp_out=r[0]
+        except:
+            wksp_out = self.prop_man.get_sample_ws_name();
 
 
       # Process old legacy parameters which are easy to re-define in dgreduce rather then transfer through Mantid
@@ -570,12 +570,12 @@ class DirectEnergyConversion(object):
 
 
       # inform user on what parameters have changed 
-      self.prop_man.log_changed_values('notice');
+        self.prop_man.log_changed_values('notice');
       #process complex parameters
 
-      prop_man = self.prop_man
+        prop_man = self.prop_man
 
-      start_time=time.time()
+        start_time=time.time()
       # defaults can be None too, but can be a file
 
      # check if reducer can find all non-run files necessary for the reduction before starting long run.
@@ -584,127 +584,127 @@ class DirectEnergyConversion(object):
 
 
       # Here was summation in dgreduce. 
-      if (np.size(self.prop_man.sample_run)) > 1 and self.prop_man.sum_runs:
+        if (np.size(self.prop_man.sample_run)) > 1 and self.prop_man.sum_runs:
         #this sums the runs together before passing the summed file to the rest of the reduction
         #this circumvents the inbuilt method of summing which fails to sum the files for diag
         # TODO: --check out if internal summation works -- it does not. Should be fixed. Old summation meanwhile
 
-        sum_name=self.prop_man.instr_name+str(self.prop_man.sample_run[0])+'-sum'
-        sample_run =self.sum_files(sum_name, self.prop_man.sample_run)
-        common.apply_calibration(self.prop_man.instr_name,sample_run,self.prop_man.det_cal_file)
-      else:
-        sample_run,sample_monitors = self.load_data(self.prop_man.sample_run)
+            sum_name=self.prop_man.instr_name+str(self.prop_man.sample_run[0])+'-sum'
+            sample_run =self.sum_files(sum_name, self.prop_man.sample_run)
+            common.apply_calibration(self.prop_man.instr_name,sample_run,self.prop_man.det_cal_file)
+        else:
+            sample_run,sample_monitors = self.load_data(self.prop_man.sample_run)
 
       # Update reduction properties which may change in the workspace but have not been modified from input parameters. 
       # E.g. detector number have changed 
-      oldChanges = prop_man.getChangedProperties();
-      allChanges  =self.prop_man.update_defaults_from_instrument(sample_run.getInstrument())
-      workspace_defined_prop=allChanges.difference(oldChanges)
-      if len(workspace_defined_prop)>0:
-          prop_man.log("****************************************************************")
-          prop_man.log('*** Sample run {0} properties change default reduction properties: '.format(sample_run.getName()))
-          prop_man.log_changed_values('notice',False,oldChanges)
-          prop_man.log("****************************************************************")
+        oldChanges = prop_man.getChangedProperties();
+        allChanges  =self.prop_man.update_defaults_from_instrument(sample_run.getInstrument())
+        workspace_defined_prop=allChanges.difference(oldChanges)
+        if len(workspace_defined_prop)>0:
+            prop_man.log("****************************************************************")
+            prop_man.log('*** Sample run {0} properties change default reduction properties: '.format(sample_run.getName()))
+            prop_man.log_changed_values('notice',False,oldChanges)
+            prop_man.log("****************************************************************")
 
-      self.prop_man.sample_run = sample_run
+        self.prop_man.sample_run = sample_run
 
 
 
-      masking = None;
-      masks_done=False
-      if not prop_man.run_diagnostics:
-          header="*** Diagnostics including hard masking is skipped "
-          masks_done = True;
+        masking = None;
+        masks_done=False
+        if not prop_man.run_diagnostics:
+            header="*** Diagnostics including hard masking is skipped "
+            masks_done = True;
       #if Reducer.save_and_reuse_masks :
       # SAVE AND REUSE MASKS
-      if self.spectra_masks:
-         masks_done=True
+        if self.spectra_masks:
+            masks_done=True
 #-------------------------------------------------------------------------------------------------------------------------------------------------------
 #  Diagnostics here 
 # --------------------------------------------------------------------------------------------------------
      # diag the sample and detector vanadium. It will deal with hard mask only if it is set that way
-      if not masks_done:
-        prop_man.log("======== Run diagnose for sample run ===========================",'notice');
-        masking = self.diagnose(prop_man.wb_run,prop_man.mask_run,
+        if not masks_done:
+            prop_man.log("======== Run diagnose for sample run ===========================",'notice');
+            masking = self.diagnose(prop_man.wb_run,prop_man.mask_run,
                                 second_white=None,print_diag_results=True)
-        if prop_man.use_hard_mask_only:
-            header = "*** Hard mask file applied to workspace with {0:d} spectra masked {1:d} spectra"
-        else:
-            header = "*** Diagnostics processed workspace with {0:d} spectra and masked {1:d} bad spectra"
+            if prop_man.use_hard_mask_only:
+                header = "*** Hard mask file applied to workspace with {0:d} spectra masked {1:d} spectra"
+            else:
+                header = "*** Diagnostics processed workspace with {0:d} spectra and masked {1:d} bad spectra"
 
 
         # diagnose absolute units:
-        if prop_man.monovan_run != None :
-            if prop_man.mono_correction_factor == None :
-                if prop_man.use_sam_msk_on_monovan == True:
-                    prop_man.log('  Applying sample run mask to mono van')
-                else:
-                    if not prop_man.use_hard_mask_only : # in this case the masking2 is different but points to the same workspace Should be better solution for that.
-                        prop_man.log("======== Run diagnose for monochromatic vanadium run ===========",'notice');
+            if prop_man.monovan_run != None :
+                if prop_man.mono_correction_factor == None :
+                    if prop_man.use_sam_msk_on_monovan == True:
+                        prop_man.log('  Applying sample run mask to mono van')
+                    else:
+                        if not prop_man.use_hard_mask_only : # in this case the masking2 is different but points to the same workspace Should be better solution for that.
+                            prop_man.log("======== Run diagnose for monochromatic vanadium run ===========",'notice');
 
-                        masking2 = self.diagnose(prop_man.wb_for_monovan_run,prop_man.monovan_run,
+                            masking2 = self.diagnose(prop_man.wb_for_monovan_run,prop_man.monovan_run,
                                          second_white = None,print_diag_results=True)
-                        masking +=  masking2
-                        DeleteWorkspace(masking2)
+                            masking +=  masking2
+                            DeleteWorkspace(masking2)
 
 
-            else: # if Reducer.mono_correction_factor != None :
-                pass
+                else: # if Reducer.mono_correction_factor != None :
+                    pass
         # Very important statement propagating masks for further usage in convert_to_energy. 
         # This property is also directly accessible from GUI.
-        self.spectra_masks=masking
+            self.spectra_masks=masking
          # save mask if it does not exist and has been already loaded
          #if Reducer.save_and_reuse_masks and not masks_done:
          #    SaveMask(InputWorkspace=masking,OutputFile = mask_file_name,GroupedDetectors=True)
-      else:
-          header = '*** Using stored mask file for workspace with  {0} spectra and {1} masked spectra'
-          masking=self.spectra_masks
+        else:
+            header = '*** Using stored mask file for workspace with  {0} spectra and {1} masked spectra'
+            masking=self.spectra_masks
  
       # estimate and report the number of failing detectors
-      failed_sp_list,nSpectra = get_failed_spectra_list_from_masks(masking)
-      nMaskedSpectra = len(failed_sp_list)
+        failed_sp_list,nSpectra = get_failed_spectra_list_from_masks(masking)
+        nMaskedSpectra = len(failed_sp_list)
       # this tells turkey in case of hard mask only but everything else semens work fine
-      prop_man.log(header.format(nSpectra,nMaskedSpectra),'notice');
+        prop_man.log(header.format(nSpectra,nMaskedSpectra),'notice');
 
       #Run the conversion first on the sample
-      deltaE_wkspace_sample = self.mono_sample(sample_run,prop_man.incident_energy,prop_man.wb_run,
+        deltaE_wkspace_sample = self.mono_sample(sample_run,prop_man.incident_energy,prop_man.wb_run,
                                                prop_man.map_file,masking)
 
  
       # calculate absolute units integral and apply it to the workspace
-      if prop_man.monovan_run != None or prop_man.mono_correction_factor != None :
-         deltaE_wkspace_sample = self.apply_absolute_normalization(deltaE_wkspace_sample,prop_man.monovan_run,\
+        if prop_man.monovan_run != None or prop_man.mono_correction_factor != None :
+            deltaE_wkspace_sample = self.apply_absolute_normalization(deltaE_wkspace_sample,prop_man.monovan_run,\
                                       prop_man.incident_energy,prop_man.wb_for_monovan_run)
 
 
-      results_name = deltaE_wkspace_sample.name();
-      if results_name != wksp_out:
-         RenameWorkspace(InputWorkspace=results_name,OutputWorkspace=wksp_out)
+        results_name = deltaE_wkspace_sample.name();
+        if results_name != wksp_out:
+            RenameWorkspace(InputWorkspace=results_name,OutputWorkspace=wksp_out)
 
 
-      ei= (deltaE_wkspace_sample.getRun().getLogData("Ei").value)
-      prop_man.log("*** Incident energy found for sample run: {0} meV".format(ei),'notice');
+        ei= (deltaE_wkspace_sample.getRun().getLogData("Ei").value)
+        prop_man.log("*** Incident energy found for sample run: {0} meV".format(ei),'notice');
 
-      end_time=time.time()
-      prop_man.log("*** Elapsed time = {0} sec".format(end_time-start_time),'notice');
+        end_time=time.time()
+        prop_man.log("*** Elapsed time = {0} sec".format(end_time-start_time),'notice');
 
-      if mtd.doesExist('_wksp.spe-white')==True:
-        DeleteWorkspace(Workspace='_wksp.spe-white')
+        if mtd.doesExist('_wksp.spe-white')==True:
+            DeleteWorkspace(Workspace='_wksp.spe-white')
     # Hack for multirep mode?
 #    if mtd.doesExist('hard_mask_ws') == True:
  #       DeleteWorkspace(Workspace='hard_mask_ws')
 
       # SNS or GUI motor stuff
-      self.calculate_rotation(deltaE_wkspace_sample)
+        self.calculate_rotation(deltaE_wkspace_sample)
       #
-      self.save_results(deltaE_wkspace_sample)
+        self.save_results(deltaE_wkspace_sample)
       # Currently clear masks unconditionally TODO: cash masks with appropriate precautions
-      self.spectra_masks = None
+        self.spectra_masks = None
       # Clear loaded raw data to free up memory --TODO: does not think it works now
-      common.clear_loaded_data()
+        common.clear_loaded_data()
 
 
-      return deltaE_wkspace_sample
+        return deltaE_wkspace_sample
 
   
 #----------------------------------------------------------------------------------
@@ -735,16 +735,16 @@ class DirectEnergyConversion(object):
              #tmp_suffix = '_plus_tmp'
 
             for filename in files:
-               temp = common.load_run(instr_name,filename, force=False,load_with_workspace = load_mon_with_ws)
+                temp = common.load_run(instr_name,filename, force=False,load_with_workspace = load_mon_with_ws)
 
-               if accum_name in mtd: # add current workspace to the existing one
-                  accumulator = mtd[accum_name]
-                  accumulator+=  temp
-                  DeleteWorkspace(Workspace=temp)
-                  prop_man.log("*** Added run: {0} to workspace: {1}".format(filename,accum_name),'notice')
-               else:
-                   accumulator=RenameWorkspace(InputWorkspace=temp,OutputWorkspace=accum_name)
-                   prop_man.log("*** Summing multiple runs: created output workspace: {0} from run {1}".format(accum_name,filename),'notice')
+                if accum_name in mtd: # add current workspace to the existing one
+                    accumulator = mtd[accum_name]
+                    accumulator+=  temp
+                    DeleteWorkspace(Workspace=temp)
+                    prop_man.log("*** Added run: {0} to workspace: {1}".format(filename,accum_name),'notice')
+                else:
+                    accumulator=RenameWorkspace(InputWorkspace=temp,OutputWorkspace=accum_name)
+                    prop_man.log("*** Summing multiple runs: created output workspace: {0} from run {1}".format(accum_name,filename),'notice')
 
             return accumulator
         else:
@@ -843,22 +843,22 @@ class DirectEnergyConversion(object):
         error =[];
         izerc=0;
         for i in range(nhist):
-           try:
-             det = data_ws.getDetector(i)
-           except Exception:
-             continue
-           if det.isMasked():
-             continue
-           sig = data_ws.readY(i)[0]
-           err = data_ws.readE(i)[0]
-           if sig != sig:     #ignore NaN (hopefully it will mean mask some day)
-               continue
-           if ((err<=0) or (sig<=0)):   # count Inf and negative||zero readings. Presence of this indicates that something went wrong
-              izerc+=1;
-              continue
+            try:
+                det = data_ws.getDetector(i)
+            except Exception:
+                continue
+            if det.isMasked():
+                continue
+            sig = data_ws.readY(i)[0]
+            err = data_ws.readE(i)[0]
+            if sig != sig:     #ignore NaN (hopefully it will mean mask some day)
+                continue
+            if ((err<=0) or (sig<=0)):   # count Inf and negative||zero readings. Presence of this indicates that something went wrong
+                izerc+=1;
+                continue
 
-           signal.append(sig) 
-           error.append(err)
+            signal.append(sig) 
+            error.append(err)
         #---------------- Loop finished
 
         norm_factor={};
@@ -910,11 +910,11 @@ class DirectEnergyConversion(object):
 
         # check for NaN
         if (norm_factor['LibISIS']!=norm_factor['LibISIS'])|(izerc!=0):    # It is an error, print diagnostics:
-           if (norm_factor['LibISIS'] !=norm_factor['LibISIS']):
-               log_value = '\n--------> Absolute normalization factor is NaN <----------------------------------------------\n'
-           else:
-               log_value ='\n--------> Warning, Monovanadium has zero spectra <--------------------------------------------\n'
-               log1_value = \
+            if (norm_factor['LibISIS'] !=norm_factor['LibISIS']):
+                log_value = '\n--------> Absolute normalization factor is NaN <----------------------------------------------\n'
+            else:
+                log_value ='\n--------> Warning, Monovanadium has zero spectra <--------------------------------------------\n'
+                log1_value = \
                "--------> Processing workspace: {0}\n"\
                "--------> Monovan Integration range : min={1}, max={2} (meV)\n"\
                "--------> Summed:  {3} spectra with total signal: {4} and error: {5}\n"\
@@ -926,11 +926,11 @@ class DirectEnergyConversion(object):
                "--------> Abs norm factors: TGP    : {11}\n"\
                .format(deltaE_wkspaceName,minmax[0],minmax[1],nhist,sum(signal),sum(error),izerc,scale_factor,
                           norm_factor['LibISIS'],norm_factor['SigSq'],norm_factor['Poisson'],norm_factor['TGP'])
-           log_value = log_value+log1_value;
-           propman.log(log_value,'error');
+            log_value = log_value+log1_value;
+            propman.log(log_value,'error');
         else:
-           DeleteWorkspace(Workspace=deltaE_wkspaceName)
-           DeleteWorkspace(Workspace=data_ws)
+            DeleteWorkspace(Workspace=deltaE_wkspaceName)
+            DeleteWorkspace(Workspace=data_ws)
         return (norm_factor['LibISIS'],norm_factor['SigSq'],norm_factor['Poisson'],norm_factor['TGP'])
 #-------------------------------------------------------------------------------
     def calculate_rotation(self,sample_wkspace,motor=None, offset=None):
@@ -955,7 +955,7 @@ class DirectEnergyConversion(object):
                 self.prop_man.log("Could not find such sample environment log. Will use psi=motor_offset")
                 motor_rotation=0
         else:
-           motor_rotation = float('nan')
+            motor_rotation = float('nan')
         self.prop_man.psi = motor_rotation+motor_offset
         
     def get_ei(self, data_ws,monitors_ws, resultws_name, ei_guess):
@@ -1028,15 +1028,15 @@ class DirectEnergyConversion(object):
 
         if mon_number is None:
             if method == 'monitor-2':
-               mon_spectr_num=int(self.prop_man.mon2_norm_spec)
+                mon_spectr_num=int(self.prop_man.mon2_norm_spec)
             else:
-               mon_spectr_num=int(self.prop_man.mon1_norm_spec)
+                mon_spectr_num=int(self.prop_man.mon1_norm_spec)
         else:
-               mon_spectr_num=mon_number
+            mon_spectr_num=mon_number
 
         monWS_name = data_ws.getName()+'_monitors'
         if monWS_name in mtd:
-               mon_ws = mtd[monWS_name];
+            mon_ws = mtd[monWS_name];
         else:
             # get pointer to the workspace
             mon_ws=data_ws;
@@ -1145,19 +1145,19 @@ class DirectEnergyConversion(object):
         for file_format  in formats:
             for case in switch(file_format):
                 if case('nxspe'):
-                   filename = save_file +'.nxspe';
-                   SaveNXSPE(InputWorkspace=workspace,Filename= filename, KiOverKfScaling=prop_man.apply_kikf_correction,psi=prop_man.psi)
-                   break
+                    filename = save_file +'.nxspe';
+                    SaveNXSPE(InputWorkspace=workspace,Filename= filename, KiOverKfScaling=prop_man.apply_kikf_correction,psi=prop_man.psi)
+                    break
                 if case('spe'):
-                   filename = save_file +'.spe';
-                   SaveSPE(InputWorkspace=workspace,Filename= filename)
-                   break
+                    filename = save_file +'.spe';
+                    SaveSPE(InputWorkspace=workspace,Filename= filename)
+                    break
                 if case('nxs'):
-                   filename = save_file +'.nxs';
-                   SaveNexus(InputWorkspace=workspace,Filename= filename)
-                   break
+                    filename = save_file +'.nxs';
+                    SaveNexus(InputWorkspace=workspace,Filename= filename)
+                    break
                 if case(): # default, could also just omit condition or 'if True'
-                   prop_man.log("Unknown file format {0} requested to save results. No saving performed this format".format(file_format));
+                    prop_man.log("Unknown file format {0} requested to save results. No saving performed this format".format(file_format));
 
     #-------------------------------------------------------------------------------
     def load_data(self, runs,new_ws_name=None,keep_previous_ws=False):
@@ -1249,7 +1249,7 @@ class DirectEnergyConversion(object):
 
     @staticmethod
     def copy_spectrum2monitors(wsName,monWSName,spectraID):
-       """
+        """
         this routine copies a spectrum form workspace to monitor workspace and rebins it according to monitor workspace binning
 
         @param wsName    -- the name of event workspace which detector is considered as monitor or Mantid pointer to this workspace
@@ -1259,38 +1259,38 @@ class DirectEnergyConversion(object):
          TODO: As extract single spectrum works only with WorkspaceIndex, we have to assume that WorkspaceIndex=spectraID-1;
          this is not always correct, so it is better to change ExtractSingleSpectrum to accept workspaceID
        """
-       if isinstance(wsName,str):
-           ws = mtd[wsName]
-       else:
-           ws = wsName;
-       if isinstance(monWSName,str):
+        if isinstance(wsName,str):
+            ws = mtd[wsName]
+        else:
+            ws = wsName;
+        if isinstance(monWSName,str):
             monWS = mtd[monWSName];
-       else:
-           monWS = monWSName;
+        else:
+            monWS = monWSName;
        # ----------------------------
-       try:
-           ws_index = monWS.getIndexFromSpectrumNumber(spectraID)
+        try:
+            ws_index = monWS.getIndexFromSpectrumNumber(spectraID)
            # Spectra is already in the monitor workspace
-           return (ws,monWS)
-       except:
-           ws_index = ws.getIndexFromSpectrumNumber(spectraID)
+            return (ws,monWS)
+        except:
+            ws_index = ws.getIndexFromSpectrumNumber(spectraID)
 
 
 
        #
-       x_param = monWS.readX(0);
-       bins = [x_param[0],x_param[1]-x_param[0],x_param[-1]];
-       ExtractSingleSpectrum(InputWorkspace=ws,OutputWorkspace='tmp_mon',WorkspaceIndex=ws_index)
-       Rebin(InputWorkspace='tmp_mon',OutputWorkspace='tmp_mon',Params=bins,PreserveEvents='0')
+        x_param = monWS.readX(0);
+        bins = [x_param[0],x_param[1]-x_param[0],x_param[-1]];
+        ExtractSingleSpectrum(InputWorkspace=ws,OutputWorkspace='tmp_mon',WorkspaceIndex=ws_index)
+        Rebin(InputWorkspace='tmp_mon',OutputWorkspace='tmp_mon',Params=bins,PreserveEvents='0')
        # should be vice versa but Conjoin invalidate ws pointers and hopefully nothing could happen with workspace during conjoining
        #AddSampleLog(Workspace=monWS,LogName=done_log_name,LogText=str(ws_index),LogType='Number');
-       mon_ws_name = monWS.getName();
-       ConjoinWorkspaces(InputWorkspace1=monWS,InputWorkspace2='tmp_mon')
-       monWS=mtd[mon_ws_name]
+        mon_ws_name = monWS.getName();
+        ConjoinWorkspaces(InputWorkspace1=monWS,InputWorkspace2='tmp_mon')
+        monWS=mtd[mon_ws_name]
 
-       if 'tmp_mon' in mtd:
-           DeleteWorkspace(WorkspaceName='tmp_mon');
-       return (ws,monWS);
+        if 'tmp_mon' in mtd:
+            DeleteWorkspace(WorkspaceName='tmp_mon');
+        return (ws,monWS);
 
     @property 
     def prop_man(self):
@@ -1358,7 +1358,7 @@ class DirectEnergyConversion(object):
             instrument = workspace.getInstrument();
             name      = instrument.getName();
             if name != self.prop_man.instr_name:
-               self.prop_man = DirectPropertyManager(name,workspace);
+                self.prop_man = DirectPropertyManager(name,workspace);
 
 
     def check_abs_norm_defaults_changed(self,changed_param_list) :
@@ -1414,7 +1414,7 @@ def get_failed_spectra_list_from_masks(masking_wksp):
 
     failed_spectra = []
     if masking_wksp is None:
-       return (failed_spectra,0);
+        return (failed_spectra,0);
 
     n_spectra = masking_wksp.getNumberHistograms()
     for i in xrange(n_spectra):

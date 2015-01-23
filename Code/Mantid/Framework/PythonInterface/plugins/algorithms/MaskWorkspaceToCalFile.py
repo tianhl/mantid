@@ -4,12 +4,12 @@ from mantid.api import *
 from mantid.simpleapi import *
 
 class QueryFlag:
-        def isMasked(self, detector, yValue):
-            return detector.isMasked()
+    def isMasked(self, detector, yValue):
+        return detector.isMasked()
 
 class QueryValue:
-        def isMasked(self, detector, yValue):
-            return yValue == 1
+    def isMasked(self, detector, yValue):
+        return yValue == 1
 
 class MaskWorkspaceToCalFile(PythonAlgorithm):
 

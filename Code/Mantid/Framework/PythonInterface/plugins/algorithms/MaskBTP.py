@@ -178,7 +178,7 @@ class MaskBTP(mantid.api.PythonAlgorithm):
                 try:
                 	return self.instrument.getComponentByName("panel"+"%02d" % banknum)[0]
                 except:
-                        return None
+                    return None
             else:
                 raise ValueError("Out of range index for "+str(self.instname)+" instrument bank numbers")
         else:

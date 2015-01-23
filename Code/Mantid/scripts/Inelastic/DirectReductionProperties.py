@@ -24,44 +24,44 @@ class IncidentEnergy(object):
         """ return  incident energy or list of incident energies """ 
         return instance._incident_energy;
     def __set__(self,instance,value):
-       """ Set up incident energy or range of energies in various formats """
-       if value != None:
-          if isinstance(value,str):
-             en_list = str.split(value,',');
-             if len(en_list)>1:                 
-                rez = [];
-                for en_str in en_list:
-                    val = float(en_str);
-                    rez.append(val)
-                instance._incident_energy=rez;
-             else:
-               instance._incident_energy=float(value);
-          else:
-            if isinstance(value,list):
-                rez = [];
-                for val in value:
-                    en_val = float(val);
-                    if en_val<=0:
-                        raise KeyError("Incident energy has to be positive, but is: {0} ".format(en_val));
-                    else:
-                        rez.append(en_val);
-
-                object.__setattr__(instance,'_incident_energy',rez);
+        """ Set up incident energy or range of energies in various formats """
+        if value != None:
+            if isinstance(value,str):
+                en_list = str.split(value,',');
+                if len(en_list)>1:                 
+                    rez = [];
+                    for en_str in en_list:
+                        val = float(en_str);
+                        rez.append(val)
+                    instance._incident_energy=rez;
+                else:
+                    instance._incident_energy=float(value);
             else:
-               object.__setattr__(instance,'_incident_energy',float(value));
-       else:
-         raise KeyError("Incident energy have to be positive number of list of positive numbers. Got None")
+                if isinstance(value,list):
+                    rez = [];
+                    for val in value:
+                        en_val = float(val);
+                        if en_val<=0:
+                            raise KeyError("Incident energy has to be positive, but is: {0} ".format(en_val));
+                        else:
+                            rez.append(en_val);
+
+                    object.__setattr__(instance,'_incident_energy',rez);
+                else:
+                    object.__setattr__(instance,'_incident_energy',float(value));
+        else:
+            raise KeyError("Incident energy have to be positive number of list of positive numbers. Got None")
        
        # 
-       inc_en=instance._incident_energy
-       if isinstance(inc_en,list):
-           for en in inc_en:
-               if en<= 0:
-                 raise KeyError("Incident energy have to be positive number of list of positive numbers."+
+        inc_en=instance._incident_energy
+        if isinstance(inc_en,list):
+            for en in inc_en:
+                if en<= 0:
+                    raise KeyError("Incident energy have to be positive number of list of positive numbers."+
                            " For input argument {0} got negative value {1}".format(value,en))     
-       else:
-         if inc_en<= 0:
-            raise KeyError("Incident energy have to be positive number of list of positive numbers."+
+        else:
+            if inc_en<= 0:
+                raise KeyError("Incident energy have to be positive number of list of positive numbers."+
                            " For value {0} got negative {1}".format(value,inc_en))
 # end IncidentEnergy
 class EnergyBins(object):
@@ -71,21 +71,21 @@ class EnergyBins(object):
         return instance._energy_bins
 
     def __set__(self,instance,values):
-       if values != None:
-          if isinstance(values,str):
-             lst = str.split(values,',');
-             nBlocks = len(lst);
-             for i in xrange(0,nBlocks,3):
-                value = [float(lst[i]),float(lst[i+1]),float(lst[i+2])]
-          else:
-              value = values;
-              nBlocks = len(value);
-          if nBlocks%3 != 0:
-               raise KeyError("Energy_bin value has to be either list of n-blocks of 3 number each or string representation of this list with numbers separated by commas")
-       else:
-          value = None              
+        if values != None:
+            if isinstance(values,str):
+                lst = str.split(values,',');
+                nBlocks = len(lst);
+                for i in xrange(0,nBlocks,3):
+                    value = [float(lst[i]),float(lst[i+1]),float(lst[i+2])]
+            else:
+                value = values;
+                nBlocks = len(value);
+            if nBlocks%3 != 0:
+                raise KeyError("Energy_bin value has to be either list of n-blocks of 3 number each or string representation of this list with numbers separated by commas")
+        else:
+            value = None              
        #TODO: implement single value settings according to rebin
-       object.__setattr__(instance,'_energy_bins',value);
+        object.__setattr__(instance,'_energy_bins',value);
 #end EnergyBins
 class SaveFileName(object):
     """ Property defines default file name to save result to
@@ -93,7 +93,7 @@ class SaveFileName(object):
         See similar property get_sample_ws_name TODO: (leave only one)
     """
     def __init__(self,Name=None):
-       self._file_name = Name
+        self._file_name = Name
     def __get__(self,instance,owner=None):
         if self._file_name:
             return self._file_name
@@ -126,9 +126,9 @@ class InstrumentDependentProp(object):
     def __init__(self,prop_name):
         self._prop_name = prop_name;
     def __get__(self,instance,owner=None):
-         if instance._pInstrument is None:
+        if instance._pInstrument is None:
             raise KeyError("Attempt to use uninitialized property manager");
-         else:
+        else:
             return getattr(instance,self._prop_name);
     def __set__(self,instance,values):
         raise AttributeError("Property {0} can not be assigned".format(self._prop_name))
@@ -333,7 +333,7 @@ class DirectReductionProperties(object):
             return self._sample_run
     @mask_run.setter
     def mask_run(self,value):
-       object.__setattr__(self,'_mask_run',value)
+        object.__setattr__(self,'_mask_run',value)
 
     # -----------------------------------------------------------------------------
     @property
@@ -399,7 +399,7 @@ class DirectReductionProperties(object):
                 idf_file=api.ExperimentInfo.getInstrumentFilename(full_name)
                 tmp_ws_name = '__empty_' + full_name
                 if not mtd.doesExist(tmp_ws_name):
-                   LoadEmptyInstrument(Filename=idf_file,OutputWorkspace=tmp_ws_name)
+                    LoadEmptyInstrument(Filename=idf_file,OutputWorkspace=tmp_ws_name)
                 instrument = mtd[tmp_ws_name].getInstrument();
             else:
                 raise TypeError(' neither correct instrument name nor instrument pointer provided as instrument parameter')
@@ -419,8 +419,8 @@ class DirectReductionProperties(object):
             logger(msg)
         else:
         # TODO: reconcile this with Mantid. 
-           if lev<=self._current_log_level:
-              print msg
+            if lev<=self._current_log_level:
+                print msg
 
 
 

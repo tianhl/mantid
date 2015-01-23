@@ -67,7 +67,7 @@ class CutMD(DataProcessorAlgorithm):
             elif n_arguments == 1:
                 step_size = horace_binning[i][0]
                 if step_size > dim_range:
-                     step_size = dim_range
+                    step_size = dim_range
                 n_bins = int( dim_range / step_size)
                 # Correct the max extent to fit n * step_size
                 out_extents[max_extent_index] = extents[min_extent_index] + ( n_bins * step_size )
@@ -81,7 +81,7 @@ class CutMD(DataProcessorAlgorithm):
                 step_size = horace_binning[i][1]
                 dim_range = dim_max - dim_min
                 if step_size > dim_range:
-                     step_size = dim_range
+                    step_size = dim_range
                 n_bins = int( dim_range / step_size)
                 # Correct the max extent to fit n * step_size
                 out_extents[ max_extent_index ] = dim_min  + ( n_bins * step_size )
@@ -109,11 +109,11 @@ class CutMD(DataProcessorAlgorithm):
         new_coords = np.empty([8, 3])
         counter = 0
         for h in Hrange:
-           for k in Krange:
-               for l in Lrange:
-                   original_corner=np.array([h,k,l])
-                   new_coords[counter]=np.dot(original_corner, Minv)
-                   counter += 1
+            for k in Krange:
+                for l in Lrange:
+                    original_corner=np.array([h,k,l])
+                    new_coords[counter]=np.dot(original_corner, Minv)
+                    counter += 1
         
         # Get the min max extents
         extents = list()
@@ -176,9 +176,9 @@ class CutMD(DataProcessorAlgorithm):
         if isinstance(projection_table, ITableWorkspace):
             column_names = set(projection_table.getColumnNames())
             if not column_names == set([Projection.u, Projection.v, 'type']):
-                    if not column_names == set([Projection.u, Projection.v, 'offsets', 'type']):
-                        if not column_names == set([Projection.u, Projection.v, Projection.w, 'offsets', 'type']):
-                            raise ValueError("Projection table schema is wrong! Column names received: " + str(column_names) )
+                if not column_names == set([Projection.u, Projection.v, 'offsets', 'type']):
+                    if not column_names == set([Projection.u, Projection.v, Projection.w, 'offsets', 'type']):
+                        raise ValueError("Projection table schema is wrong! Column names received: " + str(column_names) )
             if projection_table.rowCount() != 3:
                 raise ValueError("Projection table expects 3 rows")
                

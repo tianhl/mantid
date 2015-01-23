@@ -2044,15 +2044,15 @@ def cleanupData1D(final_data_y_axis, final_data_y_error_axis):
     return [final_data_y_axis, final_data_y_error_axis]
 
 def isNexusTakeAfterRefDate(nexus_date):
-   '''
+    '''
    This function parses the output.date and returns true if this date is after the ref date
    '''
-   nexus_date_acquistion = nexus_date.split('T')[0]
+    nexus_date_acquistion = nexus_date.split('T')[0]
    
-   if nexus_date_acquistion > ref_date:
-     return True
-   else:
-     return False
+    if nexus_date_acquistion > ref_date:
+        return True
+    else:
+        return False
 
 
 

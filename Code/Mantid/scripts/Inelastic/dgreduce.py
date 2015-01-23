@@ -37,7 +37,7 @@ def setup(instname=None,reload=False):
         old_name=Reducer.prop_man.instr_name;
         if  old_name.upper()[0:3] == instname.upper()[0:3] :
             if not reload :
-               return  # has been already defined
+                return  # has been already defined
 
     Reducer = DRC.setup_reducer(instname,reload)
 
@@ -149,10 +149,10 @@ def arb_units(wb_run,sample_run,ei_guess,rebin,map_file='default',monovan_run=No
     if sample_run:
         Reducer.prop_man.sample_run = sample_run
     try:
-         n,r=funcreturns.lhs_info('both')
-         wksp_out=r[0]
+        n,r=funcreturns.lhs_info('both')
+        wksp_out=r[0]
     except:
-         wksp_out = Reducer.prop_man.get_sample_ws_name();
+        wksp_out = Reducer.prop_man.get_sample_ws_name();
     #
     res = Reducer.convert_to_energy(wb_run,sample_run,ei_guess,rebin,map_file,monovan_run,second_wb,**kwargs)
     #
@@ -293,12 +293,12 @@ def process_legacy_parameters(**kwargs) :
         if type(params['hard_mask_file']) == str and params['hard_mask_file']=="None":
             params['hard_mask_file'] = None;
         elif type(params['hard_mask_file']) == bool:
-           if  params['hard_mask_file']:
-               raise  TypeError("hard_mask_file has to be a file name or None. It can not be boolean True")
-           else:
-               params['hard_mask_file'] = None;
+            if  params['hard_mask_file']:
+                raise  TypeError("hard_mask_file has to be a file name or None. It can not be boolean True")
+            else:
+                params['hard_mask_file'] = None;
         elif len(params['hard_mask_file']) == 0:
-             params['hard_mask_file'] = None;
+            params['hard_mask_file'] = None;
 
 
     return params
@@ -320,20 +320,20 @@ def sum_files(inst_name, accumulator, files):
     if type(files) == list:
          #tmp_suffix = '_plus_tmp'
 
-         for filename in files:
-              print 'Summing run ',filename,' to workspace ',accumulator
-              temp = common.load_run(inst_name,filename, force=False,load_with_workspace=Reducer.load_monitors_with_workspace)
+        for filename in files:
+            print 'Summing run ',filename,' to workspace ',accumulator
+            temp = common.load_run(inst_name,filename, force=False,load_with_workspace=Reducer.load_monitors_with_workspace)
 
-              if accum_name in mtd: # add current workspace to the existing one
-                  if not isinstance(accumulator,api.Workspace):
-                      accumulator = mtd[accum_name]
-                  accumulator+=  temp
-                  DeleteWorkspace(Workspace=temp)
-              else:
-                   print 'Create output workspace: '
-                   accumulator=RenameWorkspace(InputWorkspace=temp,OutputWorkspace=accum_name)
+            if accum_name in mtd: # add current workspace to the existing one
+                if not isinstance(accumulator,api.Workspace):
+                    accumulator = mtd[accum_name]
+                accumulator+=  temp
+                DeleteWorkspace(Workspace=temp)
+            else:
+                print 'Create output workspace: '
+                accumulator=RenameWorkspace(InputWorkspace=temp,OutputWorkspace=accum_name)
 
-         return accumulator
+        return accumulator
     else:
         temp = common.load_run(inst_name,files, force=False,load_with_workspace=Reducer.load_monitors_with_workspace)
         accumulator=RenameWorkspace(InputWorkspace=temp,OutputWorkspace=accum_name)

@@ -108,8 +108,8 @@ class MainWindow(QtGui.QMainWindow):
         return result
 
     def letSelected(self):
-         QtGui.QMessageBox.warning(self, "Currently You have to switch gui to select another instrument")
-         self.ui.actionLET.setChecked(True)
+        QtGui.QMessageBox.warning(self, "Currently You have to switch gui to select another instrument")
+        self.ui.actionLET.setChecked(True)
     def otherInstrumentSelected(self,INAME):
         reply = QtGui.QMessageBox.question(self, 'Selecting : '+INAME,
         "Do you want to switch GUI?", QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)

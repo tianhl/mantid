@@ -711,7 +711,7 @@ class ReflGui(QtGui.QMainWindow, refl_window.Ui_windowRefl):
                                 #If we're given a group workspace, we can just run it on the first member of the group instead
                                 thetaRun = loadedRun
                                 if isinstance(thetaRun, WorkspaceGroup):
-                                  thetaRun = thetaRun[0]
+                                    thetaRun = thetaRun[0]
                                 dqq, two_theta = CalculateResolution(Workspace = thetaRun, TwoTheta = two_theta)
 
                                 #Put the calculated resolution into the table

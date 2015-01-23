@@ -80,5 +80,5 @@ def CalibrateWish( run_per_panel_list):
 
 if __name__ == "__main__":
   # this file is found on cycle_11_1
-  run_per_panel_list =  [ (17706, 'panel01'), (17705, 'panel02'),  (17701, 'panel03'), (17702, 'panel04'), (17695, 'panel05')]
-  CalibrateWish(run_per_panel_list)
+    run_per_panel_list =  [ (17706, 'panel01'), (17705, 'panel02'),  (17701, 'panel03'), (17702, 'panel04'), (17695, 'panel05')]
+    CalibrateWish(run_per_panel_list)

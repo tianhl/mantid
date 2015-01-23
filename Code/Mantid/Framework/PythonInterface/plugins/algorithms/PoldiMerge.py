@@ -137,17 +137,17 @@ class PoldiMerge(PythonAlgorithm):
         raise RuntimeError("Workspaces can not be merged. %s. Aborting." % (str(error)))
 
     def getWorkspacesRecursive(self, workspace):
-      returnList = []
-      if isinstance(workspace, WorkspaceGroup):
-        for i in range(workspace.getNumberOfEntries()):
-          returnList += self.getWorkspacesRecursive(workspace.getItem(i))
+        returnList = []
+        if isinstance(workspace, WorkspaceGroup):
+            for i in range(workspace.getNumberOfEntries()):
+                returnList += self.getWorkspacesRecursive(workspace.getItem(i))
 
-      elif isinstance(workspace, MatrixWorkspace):
-        returnList.append(workspace)
+        elif isinstance(workspace, MatrixWorkspace):
+            returnList.append(workspace)
 
-      else:
-        raise RuntimeError("Can only merge MatrixWorkspaces, this is " + type(workspace))
+        else:
+            raise RuntimeError("Can only merge MatrixWorkspaces, this is " + type(workspace))
 
-      return returnList
+        return returnList
 
 AlgorithmFactory.subscribe(PoldiMerge)

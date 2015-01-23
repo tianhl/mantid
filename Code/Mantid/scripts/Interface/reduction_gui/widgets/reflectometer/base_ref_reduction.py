@@ -1136,12 +1136,12 @@ class BaseRefWidget(BaseWidget):
 
 
     def call_back(self, peakmin, peakmax, backmin, backmax, tofmin, tofmax):
-            self._summary.data_peak_from_pixel.setText("%-d" % int(peakmin))
-            self._summary.data_peak_to_pixel.setText("%-d" % int(peakmax))
-            self._summary.data_background_from_pixel1.setText("%-d" % int(backmin))
-            self._summary.data_background_to_pixel1.setText("%-d" % int(backmax))
-            self._summary.data_from_tof.setText("%-d" % int(tofmin))
-            self._summary.data_to_tof.setText("%-d" % int(tofmax))
+        self._summary.data_peak_from_pixel.setText("%-d" % int(peakmin))
+        self._summary.data_peak_to_pixel.setText("%-d" % int(peakmax))
+        self._summary.data_background_from_pixel1.setText("%-d" % int(backmin))
+        self._summary.data_background_to_pixel1.setText("%-d" % int(backmax))
+        self._summary.data_from_tof.setText("%-d" % int(tofmin))
+        self._summary.data_to_tof.setText("%-d" % int(tofmax))
 
     def _norm_count_vs_y(self):
 

@@ -103,9 +103,9 @@ class REFLReprocess(PythonAlgorithm):
         ws_list = AnalysisDataService.getObjectNames()
         for item in ws_list:
             if item.endswith('ts'):
-                    (_name,_ts) = item.split('_#')
-                    _list_name.append(item)
-                    _list_ts.append(_ts)
+                (_name,_ts) = item.split('_#')
+                _list_name.append(item)
+                _list_ts.append(_ts)
 
         _name_ts = zip(_list_ts, _list_name)
         _name_ts.sort()

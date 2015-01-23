@@ -27,26 +27,26 @@ class VanadiumRMM(object):
 class DetCalFile(object):
     """ property describes various sources for the detector calibration file """
     def __get__(self,instance,owner):
-          return prop_helpers.gen_getter(instance.__dict__,'det_cal_file');
+        return prop_helpers.gen_getter(instance.__dict__,'det_cal_file');
 
     def __set__(self,instance,val):
-       """ set detector calibration file using various formats """ 
+        """ set detector calibration file using various formats """ 
        
-       if val is None or isinstance(val,api.Workspace) or isinstance(val,str):
+        if val is None or isinstance(val,api.Workspace) or isinstance(val,str):
        # nothing provided or workspace provided or filename probably provided
-          if str(val) in mtd:
+            if str(val) in mtd:
                 # workspace name provided
                 val = mtd[str(val)];
-          prop_helpers.gen_setter(instance.__dict__,'det_cal_file',val)
-          return
+            prop_helpers.gen_setter(instance.__dict__,'det_cal_file',val)
+            return
   
 
-       if isinstance(val,int):
-          file_name= common.find_file(val);
-          prop_helpers.gen_setter(instance.__dict__,'det_cal_file',file_name);
-          return;
+        if isinstance(val,int):
+            file_name= common.find_file(val);
+            prop_helpers.gen_setter(instance.__dict__,'det_cal_file',file_name);
+            return;
 
-       raise NameError('Detector calibration file name can be a workspace name present in Mantid or string describing an file name');
+        raise NameError('Detector calibration file name can be a workspace name present in Mantid or string describing an file name');
     #if  Reducer.det_cal_file != None :
     #    if isinstance(Reducer.det_cal_file,str) and not Reducer.det_cal_file in mtd : # it is a file
     #        Reducer.log('Setting detector calibration file to '+Reducer.det_cal_file)
@@ -66,13 +66,13 @@ class MapMaskFile(object):
             self.__doc__ = doc_string;
 
     def __get__(self,instance,type=None):
-          return prop_helpers.gen_getter(instance.__dict__,self._field_name);
+        return prop_helpers.gen_getter(instance.__dict__,self._field_name);
 
     def __set__(self,instance,value):
         if value != None:
-           fileName, fileExtension = os.path.splitext(value)
-           if (not fileExtension):
-               value=value+self._file_ext;
+            fileName, fileExtension = os.path.splitext(value)
+            if (not fileExtension):
+                value=value+self._file_ext;
            
         prop_helpers.gen_setter(instance.__dict__,self._field_name,value);
 #end MapMaskFile
@@ -82,16 +82,16 @@ class HardMaskPlus(prop_helpers.ComplexProperty):
     def __init__(self):
         prop_helpers.ComplexProperty.__init__(self,['hard_mask_file','use_hard_mask_only','run_diagnostics'])
     def __get__(self,instance,type=None):
-         return prop_helpers.gen_getter(instance.__dict__,'hard_mask_file');
+        return prop_helpers.gen_getter(instance.__dict__,'hard_mask_file');
 
     def __set__(self,instance,value):
         if value != None:
-           fileName, fileExtension = os.path.splitext(value)
-           if (not fileExtension):
-               value=value+'.msk';
-           prop_helpers.ComplexProperty.__set__(self,instance.__dict__,[value,False,True])
+            fileName, fileExtension = os.path.splitext(value)
+            if (not fileExtension):
+                value=value+'.msk';
+            prop_helpers.ComplexProperty.__set__(self,instance.__dict__,[value,False,True])
         else:
-           prop_helpers.ComplexProperty.__set__(self,instance.__dict__,[None,True,False])
+            prop_helpers.ComplexProperty.__set__(self,instance.__dict__,[None,True,False])
 
 
 
@@ -105,7 +105,7 @@ class HardMaskOnly(prop_helpers.ComplexProperty):
         prop_helpers.ComplexProperty.__init__(self,['hard_mask_file','use_hard_mask_only','run_diagnostics'])
 
     def __get__(self,instance,type=None):
-          return prop_helpers.gen_getter(instance.__dict__,'use_hard_mask_only');
+        return prop_helpers.gen_getter(instance.__dict__,'use_hard_mask_only');
     def __set__(self,instance,value):
         if value is None:
             use_hard_mask_only = False
@@ -131,9 +131,9 @@ class HardMaskOnly(prop_helpers.ComplexProperty):
 
             # if no hard mask file is there and use_hard_mask_only is True, diagnostics should not run
             if instance.use_hard_mask_only and hard_mask_file is None:
-               run_diagnostics = False
+                run_diagnostics = False
             else:
-               run_diagnostics = True
+                run_diagnostics = True
             prop_helpers.ComplexProperty.__set__(self,instance.__dict__,[hard_mask_file,use_hard_mask_only,run_diagnostics])
         #end
 #end HardMaskOnly
@@ -156,11 +156,11 @@ class MonovanIntegrationRange(prop_helpers.ComplexProperty):
 
     def __get__(self,instance,type=None):
         if isinstance(instance,dict):
-                ei = 1
-                tDict = instance
+            ei = 1
+            tDict = instance
         else:
-                ei = instance.incident_energy
-                tDict = instance.__dict__
+            ei = instance.incident_energy
+            tDict = instance.__dict__
 
         if self._rel_range: # relative range
             if ei is None:
@@ -178,17 +178,17 @@ class MonovanIntegrationRange(prop_helpers.ComplexProperty):
 
     def __set__(self,instance,value):
         if isinstance(instance,dict):
-                dDict = instance
+            dDict = instance
         else:
-                tDict = instance.__dict__
+            tDict = instance.__dict__
         if value is None:
             if (not self._rel_range):
                 self._rel_range = True
                 self._other_prop =['monovan_lo_frac','monovan_hi_frac']
         else:
             if self._rel_range:
-               self._rel_range = False
-               self._other_prop =['monovan_lo_value','monovan_hi_value']
+                self._rel_range = False
+                self._other_prop =['monovan_lo_value','monovan_hi_value']
 
             if isinstance(value,str):
                 values = value.split(',')
@@ -204,7 +204,7 @@ class MonovanIntegrationRange(prop_helpers.ComplexProperty):
 
 
 class SpectraToMonitorsList(object):
-   """ property describes list of spectra, used as monitors to estimate incident energy
+    """ property describes list of spectra, used as monitors to estimate incident energy
        in a direct scattering experiment. 
 
        Necessary when a detector working in event mode is used as monitor. Specifying this number would copy 
@@ -212,25 +212,25 @@ class SpectraToMonitorsList(object):
 
        Written to work with old IDF too, where this property is absent.
    """ 
-   def __init__(self):
-       pass
+    def __init__(self):
+        pass
 
-   def __get__(self,instance,type=None):
-       try:
-           return  prop_helpers.gen_getter(instance.__dict__,'spectra_to_monitors_list');
-       except KeyError:
-           return None
-   def __set__(self,instance,spectra_list):
+    def __get__(self,instance,type=None):
+        try:
+            return  prop_helpers.gen_getter(instance.__dict__,'spectra_to_monitors_list');
+        except KeyError:
+            return None
+    def __set__(self,instance,spectra_list):
         """ Sets copy spectra to monitors variable as a list of monitors using different forms of input """
         result = self.convert_to_list(spectra_list);
         prop_helpers.gen_setter(instance.__dict__,'spectra_to_monitors_list',result);
         return;
-   def convert_to_list(self,spectra_list):
-       """ convert any spectra_list representation into a list """ 
-       if spectra_list is None:
+    def convert_to_list(self,spectra_list):
+        """ convert any spectra_list representation into a list """ 
+        if spectra_list is None:
             return None
 
-       if isinstance(spectra_list,str):
+        if isinstance(spectra_list,str):
             if spectra_list.lower() is 'none':
                 result = None;
             else:
@@ -239,7 +239,7 @@ class SpectraToMonitorsList(object):
                 for spectum in spectra :
                     result.append(int(spectum));
 
-       else:
+        else:
             if isinstance(spectra_list,list):
                 if len(spectra_list) == 0:
                     result=None;
@@ -249,23 +249,23 @@ class SpectraToMonitorsList(object):
                         result.append(int(spectra_list[i]));
             else:
                 result =[int(spectra_list)];
-       return result
+        return result
 
 #end SpectraToMonitorsList
 
 # format(s) to save data
 class SaveFormat(object):
    # formats available for saving
-   save_formats = ['spe','nxspe','nxs'];
+    save_formats = ['spe','nxspe','nxs'];
 
-   def __get__(self,instance,type=None):
+    def __get__(self,instance,type=None):
         formats=  prop_helpers.gen_getter(instance.__dict__,'save_format');
         if formats is None:
             return set();
         else:
             return formats;
 
-   def __set__(self,instance,value):
+    def __set__(self,instance,value):
         """ user can clear save formats by setting save_format=None or save_format = [] or save_format=''
             if empty string or empty list is provided as part of the list, all save_format-s set up earlier are cleared"""
 
@@ -290,11 +290,11 @@ class SaveFormat(object):
         else: 
             try:
                  # set single default save format recursively
-                 for val in value:
+                for val in value:
                     self.__set__(instance,val);
-                 return;
+                return;
             except:    
-               raise KeyError(' Attempting to set unknown saving format {0} of type {1}. Allowed values can be spe, nxspe or nxs'\
+                raise KeyError(' Attempting to set unknown saving format {0} of type {1}. Allowed values can be spe, nxspe or nxs'\
                    .format(value,type(value)));
         #end if different types
         if instance.__dict__['save_format'] is None:
@@ -315,14 +315,14 @@ class DiagSpectra(object):
         TODO: not fully completed, a setter does not verify string and non-string values
     """
     def __get__(self,instance,type=None):
-       sp_string = prop_helpers.gen_getter(instance.__dict__,'diag_spectra');
-       if sp_string:
+        sp_string = prop_helpers.gen_getter(instance.__dict__,'diag_spectra');
+        if sp_string:
             return self.__process_spectra_list(sp_string);
-       else:
+        else:
             return None
 
     def __set__(self,instance,spectra_list):
-            prop_helpers.gen_setter(instance.__dict__,'diag_spectra',spectra_list);
+        prop_helpers.gen_setter(instance.__dict__,'diag_spectra',spectra_list);
 
     def __process_spectra_list(self,specta_sring):
         """ process IDF description of the spectra string """
@@ -348,16 +348,16 @@ class BackbgroundTestRange(object):
         background (usually in powders) though it may be set up separately.        
     """
     def __get__(self,instance,type=None):
-       range = prop_helpers.gen_getter(instance.__dict__,'_background_test_range');
-       if range  :
+        range = prop_helpers.gen_getter(instance.__dict__,'_background_test_range');
+        if range  :
             return range 
-       else:
+        else:
             return instance.bkgd_range;
 
     def __set__(self,instance,value):
         if value is None:
-           range = prop_helpers.gen_setter(instance.__dict__,'_background_test_range',None);
-           return
+            range = prop_helpers.gen_setter(instance.__dict__,'_background_test_range',None);
+            return
         if isinstance(value,str):
             value = str.split(value,',')
         if len(value) != 2:
@@ -542,16 +542,16 @@ class DirectPropertyManager(DirectReductionProperties):
 
         # replace common substitutions for string value
         if type(val) is str :
-           val1 = val.lower()
-           if (val1 == 'none' or len(val1) == 0):
-              val = None;
-           if val1 == 'default':
-              val = self.getDefaultParameterValue(name0);
+            val1 = val.lower()
+            if (val1 == 'none' or len(val1) == 0):
+                val = None;
+            if val1 == 'default':
+                val = self.getDefaultParameterValue(name0);
            # boolean property?
-           if val1 in ['true','yes']:
-               val = True
-           if val1 in ['false','no']:
-               val = False
+            if val1 in ['true','yes']:
+                val = True
+            if val1 in ['false','no']:
+                val = False
 
 
         if type(val) is list and len(val) == 0:
@@ -582,22 +582,22 @@ class DirectPropertyManager(DirectReductionProperties):
 
    # ----------------------------
     def __getattr__(self,name):
-       """ Overloaded get method, disallowing non-existing properties being get but allowing 
+        """ Overloaded get method, disallowing non-existing properties being get but allowing 
           a property been called with  different names specified in substitution dictionary. """ 
 
-       tDict = object.__getattribute__(self,'__dict__');
-       if name is '__dict__':
-           return tDict;
-       else:
-           if name in self.__subst_dict:
+        tDict = object.__getattribute__(self,'__dict__');
+        if name is '__dict__':
+            return tDict;
+        else:
+            if name in self.__subst_dict:
                 name = self.__subst_dict[name]
            #end
-           if name in self.__descriptors:
-              ph = tDict['_'+name]           
-              return ph.__get__(self)
-           else:
-              return prop_helpers.gen_getter(tDict,name)
-       pass
+            if name in self.__descriptors:
+                ph = tDict['_'+name]           
+                return ph.__get__(self)
+            else:
+                return prop_helpers.gen_getter(tDict,name)
+        pass
 #----------------------------------------------------------------------------------
 #              Overloaded setters/getters
 #----------------------------------------------------------------------------------
@@ -722,7 +722,7 @@ class DirectPropertyManager(DirectReductionProperties):
             except:
                 pass
             if dependencies:
-                 existing_changes.update(dependencies)
+                existing_changes.update(dependencies)
 
         param_list = prop_helpers.get_default_idf_param_list(pInstrument)
         param_list =  self._convert_params_to_properties(param_list,False)
@@ -734,56 +734,56 @@ class DirectPropertyManager(DirectReductionProperties):
         for key,val in sorted_param.iteritems():
             # set new values to old values and record this
             if key[0] == '_':
-               public_name = key[1:]
+                public_name = key[1:]
             else:
-               public_name = key
+                public_name = key
             # complex properties were modified to start with _
             if not(key in self.__dict__):
-                 name = '_'+key
+                name = '_'+key
             else:
-                 name = key
+                name = key
 
             try: # this is reliability check, and except ideally should never be hit. May occur if old IDF contains 
                     # properties, not present in recent IDF.
-                  cur_val = self.__dict__[name]
+                cur_val = self.__dict__[name]
             except:
-                  self.log("property {0} or its derivatives have not been found in existing IDF. Ignoring this property"\
+                self.log("property {0} or its derivatives have not been found in existing IDF. Ignoring this property"\
                        .format(key),'warning')
-                  continue
+                continue
 
             # complex properties may be set up through their members so no need to set up one
             if isinstance(cur_val,prop_helpers.ComplexProperty):
                # is complex property changed through its dependent properties?
-               dependent_prop = val.dependencies()
-               replace_old_value = True
-               if public_name in existing_changes:
-                   replace_old_value = False
+                dependent_prop = val.dependencies()
+                replace_old_value = True
+                if public_name in existing_changes:
+                    replace_old_value = False
 
-               if replace_old_value: # may be property have changed through its dependencies
+                if replace_old_value: # may be property have changed through its dependencies
                     for prop_name in dependent_prop:
                         if  prop_name in existing_changes:
                             replace_old_value =False
                             break
                #
-               if replace_old_value:
-                   old_val = cur_val.__get__(self.__dict__)
-                   new_val = val.__get__(param_list)
-                   if old_val != new_val:
-                      setattr(self,public_name,new_val)
+                if replace_old_value:
+                    old_val = cur_val.__get__(self.__dict__)
+                    new_val = val.__get__(param_list)
+                    if old_val != new_val:
+                        setattr(self,public_name,new_val)
                # remove dependent values from list of changed properties not to assign them later one-by one
-               for prop_name in dependent_prop:
-                   try:
-                      del sorted_param[prop_name]
-                   except:
-                       pass
+                for prop_name in dependent_prop:
+                    try:
+                        del sorted_param[prop_name]
+                    except:
+                        pass
             # simple property
             else: 
                 if public_name in existing_changes:
                     continue
                 else: 
-                   old_val = getattr(self,name);
-                   if not(val == old_val or val == cur_val):
-                     setattr(self,name,val)
+                    old_val = getattr(self,name);
+                    if not(val == old_val or val == cur_val):
+                        setattr(self,name,val)
         #End_if
 
         # Clear changed properties list (is this wise?, may be we want to know that some defaults changed?)
@@ -849,8 +849,8 @@ class DirectPropertyManager(DirectReductionProperties):
                 if not (file is None) and isinstance(file,str):
                     file_path = self._check_file_exist(file);
                     if len(file_path)==0:
-                       self.log(" Can not find file ""{0}"" for property: {1} ".format(file,prop),'error')
-                       file_missing=True
+                        self.log(" Can not find file ""{0}"" for property: {1} ".format(file,prop),'error')
+                        file_missing=True
 
             return file_missing
 
@@ -860,7 +860,7 @@ class DirectPropertyManager(DirectReductionProperties):
             abs_file_missing = check_files_list(self.__abs_norm_file_properties)
 
         if  base_file_missing or abs_file_missing:
-             raise RuntimeError(" Files needed for the run are missing ")
+            raise RuntimeError(" Files needed for the run are missing ")
     #
     def _check_monovan_par_changed(self):
         """ method verifies, if properties necessary for monovanadium reduction have indeed been changed  from defaults """
@@ -876,7 +876,7 @@ class DirectPropertyManager(DirectReductionProperties):
 
     #
     def log_changed_values(self,log_level='notice',display_header=True,already_changed=set()):
-      """ inform user about changed parameters and about the parameters that should be changed but have not
+        """ inform user about changed parameters and about the parameters that should be changed but have not
       
         This method is abstract method of DirectReductionProperties but is fully defined in 
         DirectPropertyManager
@@ -884,47 +884,47 @@ class DirectPropertyManager(DirectReductionProperties):
         display_header==True prints nice additional information about run. If False, only 
         list of changed properties displayed.
       """
-      if display_header:
+        if display_header:
         # we may want to run absolute units normalization and this function has been called with monovan run or helper procedure
-        if self.monovan_run != None :
+            if self.monovan_run != None :
             # check if mono-vanadium is provided as multiple files list or just put in brackets occasionally
-            self.log("****************************************************************",'notice');
-            self.log('*** Output will be in absolute units of mb/str/mev/fu','notice')
-            non_changed = self._check_monovan_par_changed();
-            if len(non_changed) > 0:
-                for prop in non_changed:
-                    value = getattr(self,prop)
-                    message = "\n***WARNING!: Absolute units reduction parameter : {0} has its default value: {1}"\
+                self.log("****************************************************************",'notice');
+                self.log('*** Output will be in absolute units of mb/str/mev/fu','notice')
+                non_changed = self._check_monovan_par_changed();
+                if len(non_changed) > 0:
+                    for prop in non_changed:
+                        value = getattr(self,prop)
+                        message = "\n***WARNING!: Absolute units reduction parameter : {0} has its default value: {1}"\
                               "\n             This may need to change for correct absolute units reduction\n"
 
-                    self.log(message.format(prop,value),'warning')
+                        self.log(message.format(prop,value),'warning')
 
 
           # now let's report on normal run.
-        self.log("*** Provisional Incident energy: {0:>12.3f} mEv".format(self.incident_energy),log_level)
+            self.log("*** Provisional Incident energy: {0:>12.3f} mEv".format(self.incident_energy),log_level)
       #end display_header
 
-      self.log("****************************************************************",log_level);
-      changed_Keys= self.getChangedProperties();
-      for key in changed_Keys:
-          if key in already_changed:
-              continue
-          val = getattr(self,key);
-          self.log("  Value of : {0:<25} is set to : {1:<20} ".format(key,val),log_level)
+        self.log("****************************************************************",log_level);
+        changed_Keys= self.getChangedProperties();
+        for key in changed_Keys:
+            if key in already_changed:
+                continue
+            val = getattr(self,key);
+            self.log("  Value of : {0:<25} is set to : {1:<20} ".format(key,val),log_level)
 
-      if not display_header:
-          return
+        if not display_header:
+            return
 
-      save_dir = config.getString('defaultsave.directory')
-      self.log("****************************************************************",log_level);
-      if self.monovan_run != None and not('van_mass' in changed_Keys):                           # This output is 
-         self.log("*** Monochromatic vanadium mass used : {0} ".format(self.van_mass),log_level) # Adroja request from may 2014
+        save_dir = config.getString('defaultsave.directory')
+        self.log("****************************************************************",log_level);
+        if self.monovan_run != None and not('van_mass' in changed_Keys):                           # This output is 
+            self.log("*** Monochromatic vanadium mass used : {0} ".format(self.van_mass),log_level) # Adroja request from may 2014
       #
-      self.log("*** By default results are saved into: {0}".format(save_dir),log_level);
-      self.log("*** Output will be normalized to {0}".format(self.normalise_method),log_level);
-      if  self.map_file == None:
+        self.log("*** By default results are saved into: {0}".format(save_dir),log_level);
+        self.log("*** Output will be normalized to {0}".format(self.normalise_method),log_level);
+        if  self.map_file == None:
             self.log('*** one2one map selected',log_level)
-      self.log("****************************************************************",log_level);
+        self.log("****************************************************************",log_level);
 
 
     #def help(self,keyword=None) :

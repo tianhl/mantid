@@ -133,18 +133,18 @@ def diagnose(white_int, **kwargs):
     end_index_name=" to: end"
     default = True
     if hasattr(parser, 'print_diag_results') and parser.print_diag_results:
-            default=True
+        default=True
     if 'start_index' in kwargs:
-            default = False
-            start_index_name = "from: "+str(kwargs['start_index'])
+        default = False
+        start_index_name = "from: "+str(kwargs['start_index'])
     if 'end_index' in kwargs :
-            default = False
-            end_index_name = " to: "+str(kwargs['end_index'])
+        default = False
+        end_index_name = " to: "+str(kwargs['end_index'])
 
 
     testName=start_index_name+end_index_name
     if not default :
-       testName = " For bank: "+start_index_name+end_index_name
+        testName = " For bank: "+start_index_name+end_index_name
 
     if hasattr(parser, 'print_diag_results') and parser.print_diag_results:
         print_test_summary(test_results,testName)

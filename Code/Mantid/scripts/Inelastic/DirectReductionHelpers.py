@@ -25,7 +25,7 @@ class ComplexProperty(object):
          
         #changed_prop=[];
         for key,val in zip(self._other_prop,value):
-                spec_dict[key] =val;
+            spec_dict[key] =val;
                 #changed_prop.append(key);
         #return changed_prop;
     def dependencies(self):
@@ -41,29 +41,29 @@ class ComplexProperty(object):
 
 
 def get_default_parameter(instrument, name):
-        """ Function gets the value of a default instrument parameter and 
+    """ Function gets the value of a default instrument parameter and 
             assign proper(the one defined in IPF ) type to this parameter 
             @param instrument -- 
         """ 
 
-        if instrument is None:
-            raise ValueError("Cannot initiate default parameter, instrument has not been properly defined.")
+    if instrument is None:
+        raise ValueError("Cannot initiate default parameter, instrument has not been properly defined.")
 
-        type_name = instrument.getParameterType(name)
-        if type_name == "double":
-            val = instrument.getNumberParameter(name)
-        elif type_name == "bool":
-            val = instrument.getBoolParameter(name)
-        elif type_name == "string":
-            val = instrument.getStringParameter(name)
-            if val[0] == "None" :
-                return None
-        elif type_name == "int" :
-              val = instrument.getIntParameter(name)
-        else :
-            raise KeyError(" Instrument: {0} does not have parameter with name: {1}".format(instrument.getName(),name))
+    type_name = instrument.getParameterType(name)
+    if type_name == "double":
+        val = instrument.getNumberParameter(name)
+    elif type_name == "bool":
+        val = instrument.getBoolParameter(name)
+    elif type_name == "string":
+        val = instrument.getStringParameter(name)
+        if val[0] == "None" :
+            return None
+    elif type_name == "int" :
+        val = instrument.getIntParameter(name)
+    else :
+        raise KeyError(" Instrument: {0} does not have parameter with name: {1}".format(instrument.getName(),name))
 
-        return val[0]
+    return val[0]
 
 def get_default_idf_param_list(pInstrument,synonims_list=None):
     """ Obtain default reduction parameters list from the instrument """
@@ -94,11 +94,11 @@ def build_properties_dict(param_map,synonims,preffix='') :
     prelim_dict = dict();
 
     for name in param_map:
-       if name in synonims:
-          final_name = preffix+str(synonims[name]);
-       else:
-          final_name = preffix+str(name)
-       prelim_dict[final_name]=None;
+        if name in synonims:
+            final_name = preffix+str(synonims[name]);
+        else:
+            final_name = preffix+str(name)
+        prelim_dict[final_name]=None;
 
     param_keys = prelim_dict.keys();
     properties_dict = dict();
@@ -110,24 +110,24 @@ def build_properties_dict(param_map,synonims,preffix='') :
             final_name = preffix+str(name)
 
         if isinstance(val,str):  
-               val = val.strip()
-               keys_candidates = val.split(":")
-               n_keys = len(keys_candidates)
+            val = val.strip()
+            keys_candidates = val.split(":")
+            n_keys = len(keys_candidates)
                #
-               if n_keys>1 : # this is the property we want to modify
-                   result=list();
-                   for key in keys_candidates :
-                       if key in synonims:
-                           rkey = preffix+str(synonims[key]);
-                       else:
-                           rkey = preffix+str(key);
-                       if rkey in param_keys:
-                          result.append(rkey);
-                       else:
-                          raise KeyError('Substitution key : {0} is not in the list of allowed keys'.format(rkey));
-                   properties_dict['_'+final_name]=ComplexProperty(result)
-               else:
-                   properties_dict[final_name] =keys_candidates[0];
+            if n_keys>1 : # this is the property we want to modify
+                result=list();
+                for key in keys_candidates :
+                    if key in synonims:
+                        rkey = preffix+str(synonims[key]);
+                    else:
+                        rkey = preffix+str(key);
+                    if rkey in param_keys:
+                        result.append(rkey);
+                    else:
+                        raise KeyError('Substitution key : {0} is not in the list of allowed keys'.format(rkey));
+                properties_dict['_'+final_name]=ComplexProperty(result)
+            else:
+                properties_dict[final_name] =keys_candidates[0];
         else:
             properties_dict[final_name]=val;
 
@@ -156,11 +156,11 @@ def build_subst_dictionary(synonims_list=None) :
        norm-mon1-spec=my_detector in the synonyms field of the IDF parameters file.
     """
     if not synonims_list :  # nothing to do
-            return dict();
+        return dict();
     if type(synonims_list) == dict : # all done
-            return synonims_list
+        return synonims_list
     if type(synonims_list) != str :
-            raise AttributeError("The synonyms field of Reducer object has to be special format string or the dictionary")
+        raise AttributeError("The synonyms field of Reducer object has to be special format string or the dictionary")
         # we are in the right place and going to transform string into dictionary
 
     subst_lines = synonims_list.split(";")
@@ -169,14 +169,14 @@ def build_subst_dictionary(synonims_list=None) :
         lin=lin.strip()
         keys = lin.split("=")
         if len(keys) < 2 :
-                raise AttributeError("The pairs in the synonyms fields have to have form key1=key2=key3 with at least two values present")
+            raise AttributeError("The pairs in the synonyms fields have to have form key1=key2=key3 with at least two values present")
         if len(keys[0]) == 0:
-                raise AttributeError("The pairs in the synonyms fields have to have form key1=key2=key3 with at least two values present, but the first key is empty")
+            raise AttributeError("The pairs in the synonyms fields have to have form key1=key2=key3 with at least two values present, but the first key is empty")
         for i in xrange(1,len(keys)) :
-                if len(keys[i]) == 0 :
-                    raise AttributeError("The pairs in the synonyms fields have to have form key1=key2=key3 with at least two values present, but the key"+str(i)+" is empty")
-                kkk = keys[i].strip();
-                rez[kkk]=keys[0].strip()
+            if len(keys[i]) == 0 :
+                raise AttributeError("The pairs in the synonyms fields have to have form key1=key2=key3 with at least two values present, but the key"+str(i)+" is empty")
+            kkk = keys[i].strip();
+            rez[kkk]=keys[0].strip()
 
     return rez;
 
@@ -223,14 +223,14 @@ def gen_setter(keyval_dict,key,val):
 
     test_val = keyval_dict[name];
     if isinstance(test_val,ComplexProperty):
-       if not isinstance(val,list):
-          raise KeyError(' You can not assign non-list value to complex property {0}'.format(key))
-       pass
+        if not isinstance(val,list):
+            raise KeyError(' You can not assign non-list value to complex property {0}'.format(key))
+        pass
             # Assigning values for composite function to the function components
-       test_val.__set__(keyval_dict,val)
-       return None
+        test_val.__set__(keyval_dict,val)
+        return None
     else:
-       keyval_dict[key] = val;
+        keyval_dict[key] = val;
     return None
 
 
@@ -239,13 +239,13 @@ def check_instrument_name(old_name,new_name):
 
 
     if new_name is None:
-       if not(old_name is None):
+        if not(old_name is None):
             return (None,None,str(config.getFacility()))
-       else:
+        else:
             raise KeyError("No instrument name is defined")
 
     if old_name == new_name:
-       return;
+        return;
 
     # Instrument name might be a prefix, query Mantid for the full name
     short_name=''
@@ -259,18 +259,18 @@ def check_instrument_name(old_name,new_name):
         facilities = config.getFacilities()
         old_facility = str(config.getFacility())
         for facility in facilities:
-               config.setString('default.facility',facility.name())
-               try :
-                   instrument = facility.instrument(new_name)
-                   short_name = instrument.shortName()
-                   full_name = instrument.name()
-                   if len(short_name)>0 :
-                       break
-               except:
-                   pass
+            config.setString('default.facility',facility.name())
+            try :
+                instrument = facility.instrument(new_name)
+                short_name = instrument.shortName()
+                full_name = instrument.name()
+                if len(short_name)>0 :
+                    break
+            except:
+                pass
         if len(short_name)==0 :
-           config.setString('default.facility',old_facility)
-           raise KeyError(" Can not find/set-up the instrument: "+new_name+' in any supported facility')
+            config.setString('default.facility',old_facility)
+            raise KeyError(" Can not find/set-up the instrument: "+new_name+' in any supported facility')
 
     new_name = short_name
     facility = str(config.getFacility())
