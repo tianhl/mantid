@@ -1,43 +1,77 @@
-"""
-Conversion class defined for conversion to deltaE for
-'direct' inelastic geometry instruments
+from mantid.simpleapi import *
+from mantid.kernel import funcreturns
+from mantid import api
+from mantid import geometry
 
-The class defines various methods to allow users to convert their
-files to DeltaE.
+import time as time
+import glob,sys,os.path,math
+import numpy as np
 
-            Usage:
->>red = DirectEnergyConversion('InstrumentName')
-and then: 
->>red.convert_to_energy_transfer(wb_run,sample_run,ei_guess,rebin)
-or
->>red.convert_to_energy_transfer(wb_run,sample_run,ei_guess,rebin,**arguments)
-or
->>red.convert_to_energy_transfer(wb_run,sample_run,ei_guess,rebin,mapfile,**arguments)
-or
->>red.convert_to_energy_transfer(wb_run   
-Whitebeam run number or file name or workspace
-       sample_run  sample run number or file name or workspace
-                ei_guess    Ei guess
-                rebin       Rebin parameters
-                mapfile     Mapfile -- if absent/'default' the defaults from IDF are used
-                monovan_run If present will do the absolute units normalization. Number of additional parameters
-                            specified in **kwargs is usually requested for this. If they are absent, program uses defaults,
-                            but the defaults (e.g. sample_mass or sample_rmm ) are usually incorrect for a particular run.
-                arguments   The dictionary containing additional keyword arguments.
-                            The list of allowed additional arguments is defined in InstrName_Parameters.xml file, located in
-                            MantidPlot->View->Preferences->Mantid->Directories->Parameter Definitions
+import CommonFunctions as common
+import diagnostics
+from PropertyManager import PropertyManager
+from ReductionHelpers import extract_non_system_names
 
-        with run numbers as input:
-       >>red.convert_to_energy_transfer(1000,10001,80,[-10,.1,70])  # will run on default instrument
 
-       >>red.convert_to_energy_transfer(1000,10001,80,[-10,.1,70],'mari_res', additional keywords as required)
+def setup_reducer(inst_name,reload_instrument=False):
+    """
+    Given an instrument name or prefix this sets up a converter
+    object for the reduction
+    """
+    try:
+        return DirectEnergyConversion(inst_name,reload_instrument)
+    except RuntimeError, exc:
+        raise RuntimeError('Unknown instrument "%s" or wrong IDF file for this instrument, cannot continue' % inst_name)
 
-       >>red.convert_to_energy_transfer(1000,10001,80,'-10,.1,70','mari_res',fixei=True)
 
-       A detector calibration file must be specified if running the reduction with workspaces as input
-       namely:
-       >>w2=cred.onvert_to_energy_transfer('wb_wksp','run_wksp',ei,rebin_params,mapfile,det_cal_file=cal_file
-               ,diag_remove_zero=False,norm_method='current')
+class DirectEnergyConversion(object):
+    """
+    Performs a convert to energy assuming the provided instrument is an direct inelastic geometry instruments
+
+
+    The class defines various methods to allow users to convert their
+    files to Energy transfer
+
+    Usage:
+    >>red = DirectEnergyConversion('InstrumentName')
+      and then: 
+    >>red.convert_to_energy(wb_run,sample_run,ei_guess,rebin)
+      or
+    >>red.convert_to_energy(wb_run,sample_run,ei_guess,rebin,**arguments)
+      or
+    >>red.convert_to_energy(wb_run,sample_run,ei_guess,rebin,mapfile,**arguments)
+      or
+    >>red.prop_man.sample_run = run number
+    >>red.prop_man.wb_run     = Whitebeam 
+    >>red.prop_man.incident_energy = energy guess
+    >>red.prop_man.energy_bins = [min_val,step,max_val]
+    >>red.convert_to_energy()
+
+    Where:
+    Whitebeam run number or file name or workspace
+    sample_run  sample run number or file name or workspace
+    ei_guess    suggested value for incident energy of neutrons in direct inelastic instrument
+    energy_bins energy binning requested for resulting spe workspace. 
+    mapfile     Mapfile -- if absent/'default' the defaults from IDF are used
+    monovan_run If present will do the absolute units normalization. Number of additional parameters
+                specified in **kwargs is usually requested for this. If they are absent, program uses defaults,
+                but the defaults (e.g. sample_mass or sample_rmm ) are usually incorrect for a particular run.
+    arguments   The dictionary containing additional keyword arguments.
+                The list of allowed additional arguments is defined in InstrName_Parameters.xml file, located in
+                MantidPlot->View->Preferences->Mantid->Directories->Parameter Definitions
+
+    Usage examples:
+    with run numbers as input:
+    >>red.convert_to_energy(1000,10001,80,[-10,.1,70])  # will run on default instrument
+
+    >>red.convert_to_energy(1000,10001,80,[-10,.1,70],'mari_res', additional keywords as required)
+
+    >>red.convert_to_energy(1000,10001,80,'-10,.1,70','mari_res',fixei=True)
+
+    A detector calibration file must be specified if running the reduction with workspaces as input
+    namely:
+    >>w2=cred.onvert_to_energy_transfer('wb_wksp','run_wksp',ei,rebin_params,mapfile,det_cal_file=cal_file
+                                        ,diag_remove_zero=False,norm_method='current')
 
 
      All available keywords are provided in InstName_Parameters.xml file
@@ -90,36 +124,6 @@ Whitebeam run number or file name or workspace
       hardmaskPlus=Filename :load a hardmarkfile and apply together with diag mask
 
       hardmaskOnly=Filename :load a hardmask and use as only mask
-"""
-
-
-from mantid.simpleapi import *
-from mantid.kernel import funcreturns
-from mantid import api
-from mantid import geometry
-
-import time as time
-import glob,sys,os.path,math
-import numpy as np
-
-import CommonFunctions as common
-import diagnostics
-from DirectPropertyManager import DirectPropertyManager;
-
-def setup_reducer(inst_name,reload_instrument=False):
-    """
-    Given an instrument name or prefix this sets up a converter
-    object for the reduction
-    """
-    try:
-        return DirectEnergyConversion(inst_name,reload_instrument)
-    except RuntimeError, exc:
-        raise RuntimeError('Unknown instrument "%s" or wrong IDF file for this instrument, cannot continue' % inst_name)
-
-
-class DirectEnergyConversion(object):
-    """
-    Performs a convert to energy assuming the provided instrument is an elastic instrument
     """
 
     def diagnose(self, white,diag_sample=None,**kwargs):
@@ -231,7 +235,7 @@ class DirectEnergyConversion(object):
                                          RangeLower=bkgd_range[0],RangeUpper=bkgd_range[1],
                                          IncludePartialBins=True)
             total_counts = Integration(result_ws, IncludePartialBins=True)
-            background_int = ConvertUnits(background_int, "Energy", AlignBins=0)
+            background_int = ConvertUnits(background_int, Target="Energy",EMode='Elastic', AlignBins=0)
             prop_man.log("Diagnose: finished convertUnits ",'information')
 
             background_int *= prop_man.scale_factor;
@@ -549,54 +553,53 @@ class DirectEnergyConversion(object):
     def convert_to_energy(self,wb_run=None,sample_run=None,ei_guess=None,rebin=None,map_file=None,monovan_run=None,wb_for_monovan_run=None,**kwargs):
         """ One step conversion of run into workspace containing information about energy transfer
 
-      """ 
-      # Support for old reduction interface:
+        """ 
+        # Support for old reduction interface:
         self.prop_man.set_input_parameters_ignore_nan(wb_run=wb_run,sample_run=sample_run,incident_energy=ei_guess,
                                            energy_bins=rebin,map_file=map_file,monovan_run=monovan_run,wb_for_monovan_run=wb_for_monovan_run)
-      # 
+        # 
         self.prop_man.set_input_parameters(**kwargs);
 
-      # output workspace name.
+        # output workspace name.
+
         try:
             n,r=funcreturns.lhs_info('both')
             wksp_out=r[0]
         except:
-            wksp_out = self.prop_man.get_sample_ws_name();
+            wksp_out = self.get_sample_ws_name();
+
+        # Process old legacy parameters which are easy to re-define in dgreduce rather then transfer through Mantid
+        #TODO: (verify)
+        #program_args = process_legacy_parameters(**kwargs)
 
 
-      # Process old legacy parameters which are easy to re-define in dgreduce rather then transfer through Mantid
-      #TODO: (verify)
-      #program_args = process_legacy_parameters(**kwargs)
-
-
-      # inform user on what parameters have changed 
+        # inform user on what parameters have changed 
         self.prop_man.log_changed_values('notice');
-      #process complex parameters
-
         prop_man = self.prop_man
+        #process complex parameters
+
 
         start_time=time.time()
-      # defaults can be None too, but can be a file
+        # defaults can be None too, but can be a file
 
-     # check if reducer can find all non-run files necessary for the reduction before starting long run.
-      #TODO:
-      # Reducer.check_necessary_files(monovan_run);
+        # check if reducer can find all non-run files necessary for the reduction before starting long run.
+        #TODO:
+        # Reducer.check_necessary_files(monovan_run);
 
 
-      # Here was summation in dgreduce. 
-        if (np.size(self.prop_man.sample_run)) > 1 and self.prop_man.sum_runs:
+        # Here was summation in dgreduce. 
+        if (np.size(self.sample_run)) > 1 and self.sum_runs:
         #this sums the runs together before passing the summed file to the rest of the reduction
         #this circumvents the inbuilt method of summing which fails to sum the files for diag
         # TODO: --check out if internal summation works -- it does not. Should be fixed. Old summation meanwhile
-
-            sum_name=self.prop_man.instr_name+str(self.prop_man.sample_run[0])+'-sum'
-            sample_run =self.sum_files(sum_name, self.prop_man.sample_run)
-            common.apply_calibration(self.prop_man.instr_name,sample_run,self.prop_man.det_cal_file)
+            sum_name=self.instr_name+str(self.sample_run[0])+'-sum'
+            sample_run =self.sum_files(sum_name, self.sample_run)
+            common.apply_calibration(self.instr_name,sample_run,self.det_cal_file)
         else:
-            sample_run,sample_monitors = self.load_data(self.prop_man.sample_run)
+            sample_run,sample_monitors = self.load_data(self.sample_run)
 
-      # Update reduction properties which may change in the workspace but have not been modified from input parameters. 
-      # E.g. detector number have changed 
+        # Update reduction properties which may change in the workspace but have not been modified from input parameters. 
+        # E.g. detector number have changed 
         oldChanges = prop_man.getChangedProperties();
         allChanges  =self.prop_man.update_defaults_from_instrument(sample_run.getInstrument())
         workspace_defined_prop=allChanges.difference(oldChanges)
@@ -606,9 +609,8 @@ class DirectEnergyConversion(object):
             prop_man.log_changed_values('notice',False,oldChanges)
             prop_man.log("****************************************************************")
 
-        self.prop_man.sample_run = sample_run
 
-
+        self.sample_run = sample_run
 
         masking = None;
         masks_done=False
@@ -622,10 +624,11 @@ class DirectEnergyConversion(object):
 #-------------------------------------------------------------------------------------------------------------------------------------------------------
 #  Diagnostics here 
 # --------------------------------------------------------------------------------------------------------
-     # diag the sample and detector vanadium. It will deal with hard mask only if it is set that way
+        # diag the sample and detector vanadium. It will deal with hard mask only if it is set that way
+
         if not masks_done:
             prop_man.log("======== Run diagnose for sample run ===========================",'notice');
-            masking = self.diagnose(prop_man.wb_run,prop_man.mask_run,
+            masking = self.diagnose(self.wb_run,self.mask_run,
                                 second_white=None,print_diag_results=True)
             if prop_man.use_hard_mask_only:
                 header = "*** Hard mask file applied to workspace with {0:d} spectra masked {1:d} spectra"
@@ -633,16 +636,16 @@ class DirectEnergyConversion(object):
                 header = "*** Diagnostics processed workspace with {0:d} spectra and masked {1:d} bad spectra"
 
 
-        # diagnose absolute units:
-            if prop_man.monovan_run != None :
-                if prop_man.mono_correction_factor == None :
-                    if prop_man.use_sam_msk_on_monovan == True:
+            # diagnose absolute units:
+            if self.monovan_run != None :
+                if self.mono_correction_factor == None :
+                    if self.use_sam_msk_on_monovan == True:
                         prop_man.log('  Applying sample run mask to mono van')
                     else:
-                        if not prop_man.use_hard_mask_only : # in this case the masking2 is different but points to the same workspace Should be better solution for that.
+                        if not self.use_hard_mask_only : # in this case the masking2 is different but points to the same workspace Should be better solution for that.
                             prop_man.log("======== Run diagnose for monochromatic vanadium run ===========",'notice');
 
-                            masking2 = self.diagnose(prop_man.wb_for_monovan_run,prop_man.monovan_run,
+                            masking2 = self.diagnose(self.wb_for_monovan_run,self.monovan_run,
                                          second_white = None,print_diag_results=True)
                             masking +=  masking2
                             DeleteWorkspace(masking2)
@@ -653,29 +656,28 @@ class DirectEnergyConversion(object):
         # Very important statement propagating masks for further usage in convert_to_energy. 
         # This property is also directly accessible from GUI.
             self.spectra_masks=masking
-         # save mask if it does not exist and has been already loaded
-         #if Reducer.save_and_reuse_masks and not masks_done:
-         #    SaveMask(InputWorkspace=masking,OutputFile = mask_file_name,GroupedDetectors=True)
+        # save mask if it does not exist and has been already loaded
+        #if Reducer.save_and_reuse_masks and not masks_done:
+        #    SaveMask(InputWorkspace=masking,OutputFile = mask_file_name,GroupedDetectors=True)
         else:
             header = '*** Using stored mask file for workspace with  {0} spectra and {1} masked spectra'
             masking=self.spectra_masks
  
-      # estimate and report the number of failing detectors
+        # estimate and report the number of failing detectors
         failed_sp_list,nSpectra = get_failed_spectra_list_from_masks(masking)
         nMaskedSpectra = len(failed_sp_list)
-      # this tells turkey in case of hard mask only but everything else semens work fine
+        # this tells turkey in case of hard mask only but everything else semens work fine
         prop_man.log(header.format(nSpectra,nMaskedSpectra),'notice');
 
-      #Run the conversion first on the sample
-        deltaE_wkspace_sample = self.mono_sample(sample_run,prop_man.incident_energy,prop_man.wb_run,
-                                               prop_man.map_file,masking)
+        #Run the conversion first on the sample
+        deltaE_wkspace_sample = self.mono_sample(sample_run,self.incident_energy,self.wb_run,
+                                               self.map_file,masking)
 
  
-      # calculate absolute units integral and apply it to the workspace
-        if prop_man.monovan_run != None or prop_man.mono_correction_factor != None :
-            deltaE_wkspace_sample = self.apply_absolute_normalization(deltaE_wkspace_sample,prop_man.monovan_run,\
-                                      prop_man.incident_energy,prop_man.wb_for_monovan_run)
-
+        # calculate absolute units integral and apply it to the workspace
+        if self.monovan_run != None or self.mono_correction_factor != None :
+            deltaE_wkspace_sample = self.apply_absolute_normalization(deltaE_wkspace_sample,self.monovan_run,\
+                                      self.incident_energy,self.wb_for_monovan_run)
 
         results_name = deltaE_wkspace_sample.name();
         if results_name != wksp_out:
@@ -690,17 +692,17 @@ class DirectEnergyConversion(object):
 
         if mtd.doesExist('_wksp.spe-white')==True:
             DeleteWorkspace(Workspace='_wksp.spe-white')
-    # Hack for multirep mode?
+# Hack for multirep mode?
 #    if mtd.doesExist('hard_mask_ws') == True:
- #       DeleteWorkspace(Workspace='hard_mask_ws')
+#       DeleteWorkspace(Workspace='hard_mask_ws')
 
-      # SNS or GUI motor stuff
+        # SNS or GUI motor stuff
         self.calculate_rotation(deltaE_wkspace_sample)
-      #
+        #
         self.save_results(deltaE_wkspace_sample)
-      # Currently clear masks unconditionally TODO: cash masks with appropriate precautions
+        # Currently clear masks unconditionally TODO: cash masks with appropriate precautions
         self.spectra_masks = None
-      # Clear loaded raw data to free up memory --TODO: does not think it works now
+        # Clear loaded raw data to free up memory --TODO: does not think it works now
         common.clear_loaded_data()
 
 
@@ -1143,7 +1145,7 @@ class DirectEnergyConversion(object):
 
 
         for file_format  in formats:
-            for case in switch(file_format):
+            for case in common.switch(file_format):
                 if case('nxspe'):
                     filename = save_file +'.nxspe';
                     SaveNXSPE(InputWorkspace=workspace,Filename= filename, KiOverKfScaling=prop_man.apply_kikf_correction,psi=prop_man.psi)
@@ -1295,14 +1297,28 @@ class DirectEnergyConversion(object):
     @property 
     def prop_man(self):
         """ Return property manager containing DirectEnergyConversion parameters """
-        return self._propMan;
+        return self._propMan
     @prop_man.setter
     def prop_man(self,value):
         """ Assign new instance of direct property manager to provide DirectEnergyConversion parameters """
-        if isinstance(value,DirectPropertyManager):
-            self._propMan = value;
+        if isinstance(value,PropertyManager):
+            self._propMan = value
         else:
-            raise KeyError("Property manager can be initialized by an instance of DirectProperyManager only")
+            raise KeyError("Property manager can be initialized by an instance of ProperyManager only")
+    @property
+    def spectra_masks(self):
+        """ check if spectra masks are defined """ 
+        if hasattr(self,'_spectra_masks'):
+            return self._spectra_masks
+        else:
+            return None
+
+    @spectra_masks.setter
+    def spectra_masks(self,value):
+        """ set up spectra masks """ 
+        self._spectra_masks = value
+
+
     #---------------------------------------------------------------------------
     # Behind the scenes stuff
     #---------------------------------------------------------------------------
@@ -1311,6 +1327,10 @@ class DirectEnergyConversion(object):
         """
         Constructor
         """
+        all_methods = dir(self)
+        # define list of all existing properties, which have descriptors
+        object.__setattr__(self,'_descriptors',extract_non_system_names(all_methods))
+
         if instr_name:
             self.initialise(instr_name,reload_instrument);
         else:
@@ -1318,8 +1338,30 @@ class DirectEnergyConversion(object):
             #
             self._keep_wb_workspace = False;
             self._do_ISIS_normalization = True;
-            self.spectra_masks = None;
+            self._spectra_masks = None;
         #end
+
+    def __getattr__(self,attr_name):
+       """  overloaded to return values of properties non-existing in the class dictionary from the property manager class except this
+            property already have descriptor in self class
+       """ 
+       if attr_name in self._descriptors:
+          return object.__getattr__(self,attr_name)
+       else:
+          return getattr(self._propMan,attr_name)
+
+    def __setattr__(self,attr_name,attr_value):
+        """ overloaded to prohibit adding non-starting with _properties to the class instance
+            and add all other properties to property manager except this property already have descriptor
+        """
+        if attr_name[0] == '_':
+            object.__setattr__(self,attr_name,attr_value)
+        else:
+            if attr_name in self._descriptors:
+                object.__setattr__(self,attr_name,attr_value)
+            else:
+                setattr(self._propMan,attr_name,attr_value)
+            
 
  
     def initialise(self, instr,reload_instrument=False):
@@ -1335,21 +1377,21 @@ class DirectEnergyConversion(object):
         # Instrument and default parameter setup
         # formats available for saving. As the reducer has to have a method to process one of this, it is private property
         if not hasattr(self,'_propMan') or self._propMan is None:
-            if isinstance(instr,DirectPropertyManager):
+            if isinstance(instr,PropertyManager):
                 self._propMan  = instr;
             else:
-                self._propMan = DirectPropertyManager(instr);
+                self._propMan = PropertyManager(instr);
         else:
             old_name = self._propMan.instrument.getName();
             if isinstance(instr,geometry._geometry.Instrument):
                 new_name = self._propMan.instrument.getName();
-            elif isinstance(instr,DirectPropertyManager):
+            elif isinstance(instr,PropertyManager):
                 new_name = instr.instr_name;
             else:
                 new_name = instr
             #end if
             if old_name != new_name or reload_instrument:
-                self._propMan = DirectPropertyManager(new_name);
+                self._propMan = PropertyManager(new_name);
             #end if
         #
 
@@ -1358,7 +1400,7 @@ class DirectEnergyConversion(object):
             instrument = workspace.getInstrument();
             name      = instrument.getName();
             if name != self.prop_man.instr_name:
-                self.prop_man = DirectPropertyManager(name,workspace);
+                self.prop_man = PropertyManager(name,workspace);
 
 
     def check_abs_norm_defaults_changed(self,changed_param_list) :
@@ -1379,28 +1421,8 @@ class DirectEnergyConversion(object):
 
 
  
-  
 
-class switch(object):
-    """ Helper class providing nice switch statement""" 
-    def __init__(self, value):
-        self.value = value
-        self.fall = False
 
-    def __iter__(self):
-        """Return the match method once, then stop"""
-        yield self.match
-        raise StopIteration
-    
-    def match(self, *args):
-        """Indicate whether or not to enter a case suite"""
-        if self.fall or not args:
-            return True
-        elif self.value in args: # changed for v1.5, see below
-            self.fall = True
-            return True
-        else:
-            return False
 
 def get_failed_spectra_list_from_masks(masking_wksp):
     """Compile a list of spectra numbers that are marked as
