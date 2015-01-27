@@ -11,10 +11,7 @@ Description
 
 The workspace data are stored in the file in columns: the first column contains the X-values, followed by pairs of Y and E values. Columns are separated by commas. The resulting file can normally be loaded into a workspace by the `LoadAscii2 <http://www.mantidproject.org/LoadAscii2>`_ algorithm.
 
-Limitations
-###########
-
-The algorithm assumes that the workspace has common X values for all spectra (i.e. is not a `ragged workspace <Ragged Workspace>`__). Only the X values from the first spectrum in the workspace are saved out.
+It is also able to handle `ragged workspaces <Ragged Workspace>`__.
 
 Usage
 -----
