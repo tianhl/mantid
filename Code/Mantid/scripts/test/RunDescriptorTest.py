@@ -180,15 +180,23 @@ class RunDescriptorTest(unittest.TestCase):
         propman  = self.prop_man
         propman.sample_run = [11001,11001]
         ws = PropertyManager.sample_run.get_workspace()
+        test_val1 = ws.dataY(3)[0]
+        test_val2 = ws.dataY(6)[100]
+        test_val3 = ws.dataY(50)[200]
         self.assertEqual(ws.name(),'SR_MAR011001')
+        self.assertEqual(ws.getNEvents(),2455286)
 
-
+        #propman.sample_run = [11001,11001]
         propman.sum_runs = True
-        propman.sample_run = [11001,11001]
         ws = PropertyManager.sample_run.get_workspace()
         self.assertEqual(ws.name(),'SR_MAR011001SumOf2')
         ws_name = PropertyManager.sample_run.get_ws_name()
         self.assertEqual(ws.name(),ws_name)
+
+        self.assertEqual(2*test_val1, ws.dataY(3)[0])
+        self.assertEqual(2*test_val2, ws.dataY(6)[100])
+        self.assertEqual(2*test_val3, ws.dataY(50)[200])
+
 
         propman.sample_run = "MAR11001.raw,11001.nxs,MAR11001.raw"
         self.assertFalse('SR_MAR011001SumOf2' in mtd)
@@ -196,6 +204,10 @@ class RunDescriptorTest(unittest.TestCase):
         self.assertEqual(ws.name(),'SR_MAR011001SumOf3')
         ws_name = PropertyManager.sample_run.get_ws_name()
         self.assertEqual(ws.name(),ws_name)
+
+        self.assertEqual(3*test_val1, ws.dataY(3)[0])
+        self.assertEqual(3*test_val2, ws.dataY(6)[100])
+        self.assertEqual(3*test_val3, ws.dataY(50)[200])
 
         propman.sum_runs = 2
         propman.sample_run = "/home/my_path/MAR11001.raw,c:/somewhere/11001.nxs,MAR11001.raw"
@@ -215,6 +227,70 @@ class RunDescriptorTest(unittest.TestCase):
         self.assertEqual(PropertyManager.sample_run.run_number(),11001)
         self.assertEqual(PropertyManager.sample_run._run_ext,'.raw')
 
- 
+    def test_get_run_list(self):
+        propman = PropertyManager('MAR')
+        propman.sample_run = [10204]
+
+        self.assertEqual(propman.sample_run,10204)
+        runs = PropertyManager.sample_run.get_run_list()
+        self.assertEqual(len(runs),1)
+        self.assertEqual(runs[0],10204)
+
+        propman.sample_run = [11230,10382,10009]
+        self.assertEqual(propman.sample_run,11230)
+        propman.sum_runs = True
+        propman.sample_run = [11231,10382,10010]
+        self.assertEqual(propman.sample_run,10010)
+
+        sum_list = PropertyManager.sum_runs.get_run_list2sum()
+        self.assertEqual(len(sum_list),3)
+
+        runs = PropertyManager.sample_run.get_run_list()
+        self.assertEqual(runs[0],sum_list[0])
+
+        propman.sample_run = 11231
+        sum_list = PropertyManager.sum_runs.get_run_list2sum()
+        self.assertEqual(len(sum_list),1)
+        self.assertEqual(sum_list[0],11231)
+        self.assertEqual(propman.sample_run,11231)
+
+        propman.sample_run = 10382
+        sum_list = PropertyManager.sum_runs.get_run_list2sum()
+        self.assertEqual(len(sum_list),2)
+        self.assertEqual(sum_list[0],11231)
+        self.assertEqual(sum_list[1],10382)
+        self.assertEqual(propman.sample_run,10382)
+        runs = PropertyManager.sample_run.get_run_list()
+        self.assertEqual(len(runs),3)
+
+        propman.sample_run = 10010
+        sum_list = PropertyManager.sum_runs.get_run_list2sum()
+        self.assertEqual(len(sum_list),3)
+        self.assertEqual(sum_list[0],11231)
+        self.assertEqual(sum_list[1],10382)
+        self.assertEqual(sum_list[2],10010)
+        runs = PropertyManager.sample_run.get_run_list()
+        self.assertEqual(len(runs),3)
+        self.assertTrue(propman.sum_runs)
+
+
+        propman.sample_run = 10011
+        sum_list = PropertyManager.sum_runs.get_run_list2sum()
+        self.assertEqual(len(sum_list),0)
+
+        runs = PropertyManager.sample_run.get_run_list()
+        self.assertEqual(len(runs),1)
+        self.assertEqual(runs[0],10011)
+        self.assertFalse(propman.sum_runs)
+
+
+
+
+
+
+
+
+
+
 if __name__=="__main__":
     unittest.main()
