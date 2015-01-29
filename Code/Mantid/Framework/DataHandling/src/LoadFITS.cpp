@@ -390,7 +390,7 @@ Workspace2D_sptr LoadFITS::addWorkspace(const FITSInfo &fileInfo,
        ++it) {
     ws->mutableRun().removeLogData("_" + it->first, true);
     ws->mutableRun().addLogData(
-        new PropertyWithValue<string>("_" + it->first, it->second));
+        new PropertyWithValue<string>("_FITS:" + it->first, it->second));
   }
 
   // Add rotational data to log. Clear first from copied WS
