@@ -1,6 +1,7 @@
 from mantid.kernel import *
 from mantid.api import *
 
+import csv
 import math
 import numpy as np
 
@@ -24,7 +25,8 @@ class EnginXFitPeaks(PythonAlgorithm):
     	self.declareProperty(FloatArrayProperty("ExpectedPeaks", (self._getDefaultPeaks())),
     		"A list of dSpacing values to be translated into TOF to find expected peaks.")
     	
-    	self.declareProperty(FileProperty(name="ExpectedPeaksFromFile",defaultValue="",action=FileAction.OptionalLoad,extensions = [".csv"]),"Load from file a list of dSpacing values to be translated into TOF to find expected peaks.")
+    	self.declareProperty(FileProperty(name="ExpectedPeaksFromFile",defaultValue="",action=FileAction.OptionalLoad,extensions = [".csv"]),
+                          "Load from file a list of dSpacing values to be translated into TOF to find expected peaks.")
 
     	self.declareProperty("Difc", 0.0, direction = Direction.Output,
     		doc = "Fitted Difc value")
@@ -104,22 +106,19 @@ class EnginXFitPeaks(PythonAlgorithm):
         self.setProperty('Zero', zero)
 
     def _readInExpectedPeaks(self):
-        """ Reads in expected peaks from the .csv file """
-        readInArray = []
+        """ Reads in expected peaks from the .csv file, and the manually entered peaks and decides which is used. File is given preference over manually entered peaks."""
         exPeakArray = []
-        updateFileName = self.getPropertyValue("ExpectedPeaksFromFile")
-        if updateFileName != "":
-            with open(updateFileName) as f:
-                for line in f:
-                    readInArray.append([float(x) for x in line.split(',')])
-            for a in readInArray:
-                for b in a:
-                    exPeakArray.append(b)
+        exPeaksfile = (self.getPropertyValue("ExpectedPeaksFromFile"))
+        if exPeaksfile != "":
+            with open(exPeaksfile) as f:
+                exPeaksfileCsv = csv.reader(f, delimiter=',', quotechar= '|')
+                for row in exPeaksfileCsv:
+                    for num in row:
+                        exPeakArray.append(float(num))
             if exPeakArray == []:
                 print "File could not be read. Defaults being used."
                 expectedPeaksD = sorted(self.getProperty('ExpectedPeaks').value)
             else: 
-                print "using file"
                 expectedPeaksD = sorted(exPeakArray)
         else:
             expectedPeaksD = sorted(self.getProperty('ExpectedPeaks').value)

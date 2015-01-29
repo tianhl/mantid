@@ -22,6 +22,9 @@ class EnginXCalibrateFull(PythonAlgorithm):
     	self.declareProperty(FloatArrayProperty("ExpectedPeaks", ""),
     		"A list of dSpacing values where peaks are expected.")
 
+        self.declareProperty(FileProperty(name="ExpectedPeaksFromFile",defaultValue="",action=FileAction.OptionalLoad,extensions = [".csv"]),
+                             "Load from file a list of dSpacing values to be translated into TOF to find expected peaks.")
+
     	self.declareProperty("Bank", 1, "Which bank to calibrate")
 
     def PyExec(self):
@@ -91,10 +94,13 @@ class EnginXCalibrateFull(PythonAlgorithm):
     def _fitPeaks(self, ws, wsIndex):
     	""" Fits expected peaks to the spectrum, and returns calibrated zero and difc values.
     	"""
+        import EnginXFitPeaks
+        #expectedPeaks = EnginXFitPeaks.EnginXFitPeaks._readInExpectedPeaks((self.getPropertyValue("ExpectedPeaksFromFile")),((self.getProperty('ExpectedPeaks').value)))
     	alg = self.createChildAlgorithm('EnginXFitPeaks')
     	alg.setProperty('InputWorkspace', ws)
     	alg.setProperty('WorkspaceIndex', wsIndex) # There should be only one index anyway
     	alg.setProperty('ExpectedPeaks', self.getProperty('ExpectedPeaks').value)
+        alg.setProperty('ExpectedPeaksFromFile', self.getProperty('ExpectedPeaksFromFile').value)
     	alg.execute()
 
     	difc = alg.getProperty('Difc').value

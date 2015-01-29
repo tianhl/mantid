@@ -22,6 +22,9 @@ class EnginXCalibrate(PythonAlgorithm):
     	self.declareProperty(FloatArrayProperty("ExpectedPeaks", ""),
     		"A list of dSpacing values where peaks are expected.")
 
+        self.declareProperty(FileProperty(name="ExpectedPeaksFromFile",defaultValue="",action=FileAction.OptionalLoad,extensions = [".csv"]),
+                          "Load from file a list of dSpacing values to be translated into TOF to find expected peaks.")
+
     	self.declareProperty("Bank", 1, "Which bank to calibrate")
 
     	self.declareProperty(ITableWorkspaceProperty("DetectorPositions", "", Direction.Input, PropertyMode.Optional),
@@ -41,6 +44,7 @@ class EnginXCalibrate(PythonAlgorithm):
     	fitPeaksAlg.setProperty('InputWorkspace', ws)
     	fitPeaksAlg.setProperty('WorkspaceIndex', 0) # There should be only one index anyway
     	fitPeaksAlg.setProperty('ExpectedPeaks', self.getProperty('ExpectedPeaks').value)
+        fitPeaksAlg.setProperty('ExpectedPeaksFromFile', self.getProperty('ExpectedPeaksFromFile').value)
     	fitPeaksAlg.execute()
 
     	self.setProperty('Difc', fitPeaksAlg.getProperty('Difc').value)
