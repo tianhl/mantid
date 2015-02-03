@@ -19,12 +19,12 @@ using namespace Mantid::DataObjects;
 
 DECLARE_ALGORITHM(LoadHFIRPDData)
 
-//----------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------
 /** Constructor
  */
 LoadHFIRPDData::LoadHFIRPDData() : m_instrumentName(""), m_numSpec(0) {}
 
-//----------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------
 /** Destructor
  */
 LoadHFIRPDData::~LoadHFIRPDData() {}
@@ -44,7 +44,10 @@ void LoadHFIRPDData::init() {
 
   declareProperty("RunStart", "", "Run start time");
 
+  /// TODO - Need to give out a list for input instrument
   declareProperty("Instrument", "HB2A", "Instrument to be loaded. ");
+
+  /// Add a property for log name of duration, default as "time"
 
   declareProperty("InitRunNumber", 1, "Starting value for run number.");
 
@@ -61,13 +64,8 @@ void LoadHFIRPDData::init() {
 /** Exec
  */
 void LoadHFIRPDData::exec() {
-  /** Stage 2
-  // Process inputs
-  std::string spiceFileName = getProperty("Filename");
 
-  // Load SPICE data
-  m_dataTableWS = loadSpiceData(spiceFileName);
-  */
+  // Process inputs
   m_dataTableWS = getProperty("InputWorkspace");
   MatrixWorkspace_const_sptr parentWS = getProperty("ParentWorkspace");
 
@@ -94,10 +92,8 @@ void LoadHFIRPDData::exec() {
   std::vector<MatrixWorkspace_sptr> vec_ws2d = convertToWorkspaces(
       m_dataTableWS, parentWS, runstart, logvecmap, vectimes);
 
-  g_log.notice() << "[DB] Convert to workspaces done!"
-                 << "\n";
-
   // Convert to MD workspaces
+  g_log.debug("About to converting to workspaces done!");
   IMDEventWorkspace_sptr m_mdEventWS = convertToMDEventWS(vec_ws2d);
   IMDEventWorkspace_sptr mdMonitorWS =
       createMonitorMDWorkspace(vec_ws2d, logvecmap);
@@ -110,38 +106,8 @@ void LoadHFIRPDData::exec() {
   appendSampleLogs(m_mdEventWS, logvecmap, vectimes);
 
   // Set property
-  g_log.notice() << "[DB] Check point!"
-                 << "\n";
   setProperty("OutputWorkspace", m_mdEventWS);
   setProperty("OutputMonitorWorkspace", mdMonitorWS);
-}
-
-//----------------------------------------------------------------------------------------------
-/** Load data by call
- */
-TableWorkspace_sptr
-LoadHFIRPDData::loadSpiceData(const std::string &spicefilename) {
-  const std::string tempoutws = "_tempoutdatatablews";
-  const std::string tempinfows = "_tempinfomatrixws";
-
-  IAlgorithm_sptr loader =
-      this->createChildAlgorithm("LoadSPICEAscii", 0, 5, true);
-
-  loader->initialize();
-  loader->setProperty("Filename", spicefilename);
-  loader->setPropertyValue("OutputWorkspace", tempoutws);
-  loader->setPropertyValue("RunInfoWorkspace", tempinfows);
-  loader->executeAsChildAlg();
-
-  TableWorkspace_sptr tempdatatablews = loader->getProperty("OutputWorkspace");
-  if (tempdatatablews)
-    g_log.notice() << "[DB] data table contains " << tempdatatablews->rowCount()
-                   << " lines."
-                   << "\n";
-  else
-    g_log.notice("No table workspace is returned.");
-
-  return tempdatatablews;
 }
 
 //----------------------------------------------------------------------------------------------
@@ -157,8 +123,6 @@ std::vector<MatrixWorkspace_sptr> LoadHFIRPDData::convertToWorkspaces(
   std::vector<std::pair<size_t, size_t> > anodelist;
   std::map<std::string, size_t> sampleindexlist;
   readTableInfo(tablews, ipt, irotangle, itime, anodelist, sampleindexlist);
-  g_log.notice() << "[DB] Check point 1: Number of anodelist = "
-                 << anodelist.size() << "\n";
   m_numSpec = anodelist.size();
 
   // Load data
@@ -175,15 +139,15 @@ std::vector<MatrixWorkspace_sptr> LoadHFIRPDData::convertToWorkspaces(
 
   // Process log data which will not be put to matrix workspace but will got to
   // MDWorkspace
-  parseSampleLogs(tablews, sampleindexlist, ipt, logvecmap);
+  parseSampleLogs(tablews, sampleindexlist, logvecmap);
 
-  g_log.notice() << "[DB] Number of matrix workspaces in vector = "
-                 << vecws.size() << "\n";
+  g_log.debug() << "Number of matrix workspaces in vector = " << vecws.size()
+                << "\n";
   return vecws;
 }
 
 //------------------------------------------------------------------------------------------------
-/**
+/** Parse sample logs from table workspace and return with a set of vectors
  * @brief LoadHFIRPDD::parseSampleLogs
  * @param tablews
  * @param indexlist
@@ -192,7 +156,7 @@ std::vector<MatrixWorkspace_sptr> LoadHFIRPDData::convertToWorkspaces(
  */
 void LoadHFIRPDData::parseSampleLogs(
     DataObjects::TableWorkspace_sptr tablews,
-    const std::map<std::string, size_t> &indexlist, size_t ipt,
+    const std::map<std::string, size_t> &indexlist,
     std::map<std::string, std::vector<double> > &logvecmap) {
   size_t numrows = tablews->rowCount();
 
@@ -202,8 +166,7 @@ void LoadHFIRPDData::parseSampleLogs(
     std::string logname = indexiter->first;
     size_t icol = indexiter->second;
 
-    g_log.notice() << "[DB] "
-                   << " About to parse log " << logname << "\n";
+    g_log.information() << " Parsing log " << logname << "\n";
 
     std::vector<double> logvec(numrows);
     for (size_t ir = 0; ir < numrows; ++ir) {
@@ -235,8 +198,6 @@ MatrixWorkspace_sptr LoadHFIRPDData::loadRunToMatrixWS(
     MatrixWorkspace_const_sptr parentws, Kernel::DateAndTime runstart,
     size_t irotangle, size_t itime,
     const std::vector<std::pair<size_t, size_t> > anodelist, double &duration) {
-  g_log.notice() << "[DB] m_numSpec = " << m_numSpec
-                 << ", Instrument name = " << m_instrumentName << ". \n";
   // New workspace from parent workspace
   MatrixWorkspace_sptr tempws =
       WorkspaceFactory::Instance().create(parentws, m_numSpec, 2, 1);
@@ -253,11 +214,13 @@ MatrixWorkspace_sptr LoadHFIRPDData::loadRunToMatrixWS(
       new TimeSeriesProperty<std::string>("run_start");
   proprunstart->addValue(runstart, runstart.toISO8601String());
 
-  g_log.notice() << "[DB] Trying to set run start to "
-                 << runstart.toISO8601String() << "\n";
+  g_log.debug() << "Run " << irow << ": set run start to "
+                << runstart.toISO8601String() << "\n";
   if (tempws->run().hasProperty("run_start")) {
-    g_log.error() << "Temp workspace exists run_start as "
-                  << tempws->run().getProperty("run_start")->value() << "\n";
+    g_log.information() << "Temporary workspace inherites run_start as "
+                        << tempws->run().getProperty("run_start")->value()
+                        << ". It will be replaced by the correct value. "
+                        << "\n";
     tempws->mutableRun().removeProperty("run_start");
   }
   tempws->mutableRun().addProperty(proprunstart);
@@ -288,12 +251,13 @@ MatrixWorkspace_sptr LoadHFIRPDData::loadRunToMatrixWS(
 
 //----------------------------------------------------------------------------------------------
 /** Read table workspace's column information
- * @brief LoadHFIRPDD::readTableInfo
+ * @brief LoadHFIRPDData::readTableInfo
  * @param tablews
  * @param ipt
  * @param irotangle
  * @param itime
  * @param anodelist
+ * @param sampleindexlist
  */
 void
 LoadHFIRPDData::readTableInfo(TableWorkspace_const_sptr tablews, size_t &ipt,
@@ -357,34 +321,19 @@ LoadHFIRPDData::readTableInfo(TableWorkspace_const_sptr tablews, size_t &ipt,
 }
 
 //----------------------------------------------------------------------------------------------
-/**
- * @brief LoadHFIRPDD::createParentWorkspace
- * @param numspec
+
+/** Convert to MD Event workspace
+ * @brief LoadHFIRPDData::convertToMDEventWS
+ * @param vec_ws2d
  * @return
  */
-API::MatrixWorkspace_sptr LoadHFIRPDData::createParentWorkspace(size_t numspec) {
-  // TODO - This method might be deleted
-
-  MatrixWorkspace_sptr tempws =
-      WorkspaceFactory::Instance().create("Workspace2D", numspec, 2, 1);
-
-  // FIXME - Need unit
-
-  // TODO - Load property from
-
-  return tempws;
-}
-
-//----------------------------------------------------------------------------------------------
-/** Convert to MD Event workspace
- */
 IMDEventWorkspace_sptr LoadHFIRPDData::convertToMDEventWS(
-    const std::vector<MatrixWorkspace_sptr> vec_ws2d) {
+    const std::vector<MatrixWorkspace_sptr> &vec_ws2d) {
   // Write the lsit of workspacs to a file to be loaded to an MD workspace
   Poco::TemporaryFile tmpFile;
   std::string tempFileName = tmpFile.path();
-  g_log.notice() << "[DB] "
-                 << "Temp MD Event file = " << tempFileName << "\n";
+  g_log.debug() << "Creating temporary MD Event file = " << tempFileName
+                << "\n";
 
   // Construct a file
   std::ofstream myfile;
@@ -431,7 +380,9 @@ IMDEventWorkspace_sptr LoadHFIRPDData::convertToMDEventWS(
       else
         detindex += nHist;
 
-      // Run time
+      // Run time increment by time
+      /// Must make 'time' be specified by user.  A validity check is required
+      /// too
       relruntime +=
           atof(thisWorkspace->run().getProperty("time")->value().c_str());
 
@@ -461,7 +412,8 @@ IMDEventWorkspace_sptr LoadHFIRPDData::convertToMDEventWS(
   return workspace;
 }
 
-/**
+//-----------------------------------------------------------------------------------------------
+/** Create an MDWorkspace for monitoring counts.
  * @brief LoadHFIRPDD::createMonitorMDWorkspace
  * @param vec_ws2d
  * @param logvecmap
@@ -473,8 +425,8 @@ IMDEventWorkspace_sptr LoadHFIRPDData::createMonitorMDWorkspace(
   // Write the lsit of workspacs to a file to be loaded to an MD workspace
   Poco::TemporaryFile tmpFile;
   std::string tempFileName = tmpFile.path();
-  g_log.notice() << "[DB] "
-                 << "Temp MD Event file = " << tempFileName << "\n";
+  g_log.debug() << "Creating temporary MD Event file for monitor counts = "
+                << tempFileName << "\n";
 
   // Construct a file
   std::ofstream myfile;
@@ -498,6 +450,7 @@ IMDEventWorkspace_sptr LoadHFIRPDData::createMonitorMDWorkspace(
       API::MatrixWorkspace_sptr thisWorkspace = *it;
 
       std::map<std::string, std::vector<double> >::const_iterator fiter;
+      /// TODO - 'monitor' should be given by user
       fiter = logvecmap.find("monitor");
       if (fiter == logvecmap.end())
         throw std::runtime_error(
@@ -518,7 +471,8 @@ IMDEventWorkspace_sptr LoadHFIRPDData::createMonitorMDWorkspace(
         myfile << detPos.X() << " ";
         myfile << detPos.Y() << " ";
         myfile << detPos.Z() << " ";
-        // Add a new dimension as event time
+        // Add a new dimension as event time.  Value is not important for
+        // monitor workspace
         myfile << relruntime << " ";
         myfile << std::endl;
       }
@@ -529,7 +483,9 @@ IMDEventWorkspace_sptr LoadHFIRPDData::createMonitorMDWorkspace(
       else
         detindex += nHist;
 
-      // Run time
+      // Run time increment by time
+      /// Must make 'time' be specified by user.  A validity check is required
+      /// too
       relruntime +=
           atof(thisWorkspace->run().getProperty("time")->value().c_str());
 
@@ -559,8 +515,8 @@ IMDEventWorkspace_sptr LoadHFIRPDData::createMonitorMDWorkspace(
   return workspace;
 }
 
-//---
-/**
+//-----------------------------------------------------------------------------------------------
+/** Create sample logs for MD workspace
  * @brief LoadHFIRPDD::appendSampleLogs
  * @param mdws
  * @param logvecmap
@@ -570,6 +526,12 @@ void LoadHFIRPDData::appendSampleLogs(
     IMDEventWorkspace_sptr mdws,
     const std::map<std::string, std::vector<double> > &logvecmap,
     const std::vector<Kernel::DateAndTime> &vectimes) {
+
+  /// FIXME *** TODO *** : Do not make a long list of time series property for
+  /// run 1.
+  /// BUT assign the relevant sample values to each ExperimentInfo of each run
+  /// Only make the properties in the ParentWorkspace to Sample log of run 0???
+
   // Check!
   size_t numexpinfo = mdws->getNumExperimentInfo();
   if (numexpinfo == 0)
@@ -612,9 +574,10 @@ void LoadHFIRPDData::appendSampleLogs(
 
 //---------------------------------------------------------------------------------
 /** Append Experiment Info
- * @brief LoadHFIRPDD::addExperimentInfos
- * @param mdwd
+ * @brief LoadHFIRPDData::addExperimentInfos
+ * @param mdws
  * @param vec_ws2d
+ * @param init_runnumber
  */
 void LoadHFIRPDData::addExperimentInfos(
     API::IMDEventWorkspace_sptr mdws,

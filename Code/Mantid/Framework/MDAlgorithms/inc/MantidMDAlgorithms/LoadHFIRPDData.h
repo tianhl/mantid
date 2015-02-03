@@ -70,7 +70,7 @@ private:
 
   /// Convert to MD workspaces
   API::IMDEventWorkspace_sptr
-  convertToMDEventWS(const std::vector<API::MatrixWorkspace_sptr> vec_ws2d);
+  convertToMDEventWS(const std::vector<API::MatrixWorkspace_sptr> &vec_ws2d);
 
   /// Parse data table workspace to a vector of matrix workspaces
   std::vector<API::MatrixWorkspace_sptr>
@@ -92,7 +92,6 @@ private:
   /// Return sample logs
   void parseSampleLogs(DataObjects::TableWorkspace_sptr tablews,
                        const std::map<std::string, size_t> &indexlist,
-                       size_t ipt,
                        std::map<std::string, std::vector<double> > &logvecmap);
 
   /// Load one run (one pt.) to a matrix workspace
@@ -115,12 +114,10 @@ private:
                    const std::map<std::string, std::vector<double> > &logvecmap,
                    const std::vector<Kernel::DateAndTime> &vectimes);
 
+  /// Create an MDWorkspace for monitor counts
   API::IMDEventWorkspace_sptr createMonitorMDWorkspace(
       const std::vector<API::MatrixWorkspace_sptr> vec_ws2d,
       const std::map<std::string, std::vector<double> > logvecmap);
-
-  // API::IMDEventWorkspace_sptr convertToMDEventWS(const
-  // std::vector<API::MatrixWorkspace_sptr> vec_wd2d);
 
   /// File name
   std::string m_spiceFilename;
