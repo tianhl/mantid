@@ -113,6 +113,7 @@ class MANTID_GEOMETRY_DLL SymmetryOperation {
 public:
   SymmetryOperation();
   SymmetryOperation(const std::string &identifier);
+  SymmetryOperation(const Kernel::IntMatrix &matrix, const V3R &vector);
 
   SymmetryOperation(const SymmetryOperation &other);
   SymmetryOperation &operator=(const SymmetryOperation &other);
@@ -145,8 +146,6 @@ public:
   bool operator<(const SymmetryOperation &other) const;
 
 protected:
-  SymmetryOperation(const Kernel::IntMatrix &matrix, const V3R &vector);
-
   void init(const Kernel::IntMatrix &matrix, const V3R &vector);
 
   size_t getOrderFromMatrix(const Kernel::IntMatrix &matrix) const;

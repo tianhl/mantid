@@ -86,6 +86,16 @@ public:
         TS_ASSERT_EQUALS(inversion.identifier(), anotherInversion.identifier());
     }
 
+    void testMatrixVectorPairConstructor()
+    {
+        SymmetryOperation inversion("-x,-y,-z");
+        SymmetryOperation anotherInversion(inversion.matrix(), inversion.vector());
+
+        TS_ASSERT_EQUALS(inversion.identifier(), anotherInversion.identifier());
+        TS_ASSERT_EQUALS(inversion.matrix(), anotherInversion.matrix());
+        TS_ASSERT_EQUALS(inversion.vector(), anotherInversion.vector());
+    }
+
     void testIsIdentity()
     {
         SymmetryOperation identity;
